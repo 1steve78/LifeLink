@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Send the request as multipart form data." }, { status: 400 });
   }
 
-  const submission = validateRequestSubmission({
+  const rawFields = {
     patientName: formData.get("patientName"),
     patientReference: formData.get("patientReference"),
     patientAge: formData.get("patientAge") || undefined,
@@ -140,24 +140,33 @@ export async function POST(request: Request) {
     longitude: formData.get("longitude") || undefined,
     urgency: formData.get("urgency"),
     requiredBy: formData.get("requiredBy"),
-  });
+  };
+  console.log("[POST /api/requests] raw fields:", JSON.stringify(rawFields));
+
+  const submission = validateRequestSubmission(rawFields);
   if (!submission.success) {
+    console.error("[POST /api/requests] 422 field validation failed:", JSON.stringify(submission.errors));
     return NextResponse.json({ error: "Some request details need attention.", fields: submission.errors }, { status: 422 });
   }
 
   const document = formData.get("document");
   if (!(document instanceof File)) {
+    console.error("[POST /api/requests] 422 no document attached");
     return NextResponse.json({ error: "Attach a hospital requisition or other supporting document." }, { status: 422 });
   }
   if (formData.get("documentAiConsent") !== "true") {
+    console.error("[POST /api/requests] 422 AI consent missing");
     return NextResponse.json({ error: "Consent is required to analyze the supporting document." }, { status: 422 });
   }
+  console.log("[POST /api/requests] document:", document.name, document.type, document.size, "bytes");
 
   let validatedDocument;
   try {
     validatedDocument = await validateSupportingDocument(document);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "The document could not be validated." }, { status: 422 });
+    const msg = error instanceof Error ? error.message : "The document could not be validated.";
+    console.error("[POST /api/requests] 422 document validation threw:", msg);
+    return NextResponse.json({ error: msg }, { status: 422 });
   }
 
   const requestId = randomUUID();
