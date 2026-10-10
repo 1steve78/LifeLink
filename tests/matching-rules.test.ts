@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compatibleDonorGroups, passesDonationInterval, radiusMetersForUrgency } from "../lib/pulse/matching-rules";
+import { compatibleDonorGroups, donorAvailabilityBand, passesDonationInterval, radiusMetersForUrgency } from "../lib/pulse/matching-rules";
 
 describe("Emergency Pulse matching rules", () => {
   it("uses explicit red-cell donor compatibility groups", () => {
@@ -12,6 +12,12 @@ describe("Emergency Pulse matching rules", () => {
     expect(radiusMetersForUrgency("critical")).toBe(15_000);
     expect(radiusMetersForUrgency("urgent")).toBe(8_000);
     expect(radiusMetersForUrgency("planned")).toBe(5_000);
+  });
+
+  it("returns broad availability bands instead of exact donor counts", () => {
+    expect([0, 1, 3, 4, 9, 10].map(donorAvailabilityBand)).toEqual([
+      "none", "limited", "limited", "several", "several", "many",
+    ]);
   });
 
   it("accepts first-time donors and enforces the 90-day screening boundary", () => {

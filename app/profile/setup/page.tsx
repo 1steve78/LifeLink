@@ -219,7 +219,7 @@ export default function ProfileSetupPage() {
 
       setSuccessMessage(
         accountType === "donor"
-          ? "🎉 Profile complete! You are registered as an active community donor."
+          ? "🎉 Profile complete! If available, you will be listed for matching for 72 hours."
           : "🎉 Profile complete! You are ready to create and manage blood requests."
       );
 
@@ -651,7 +651,7 @@ export default function ProfileSetupPage() {
                     Available for Emergency Donation
                   </label>
                   <p className="text-xs text-neutral-500">
-                    Receive immediate notifications when verified critical requests match your blood type.
+                    If switched on, your profile is matched for 72 hours. You can extend or pause availability at any time from Emergency Pulse.
                   </p>
                 </div>
                 <button

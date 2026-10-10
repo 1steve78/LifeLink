@@ -110,7 +110,8 @@ export async function POST(request: Request) {
         : (data.accountType as "requester" | "donor");
 
     const now = new Date();
-    const isDonor = data.accountType === "donor";
+    const isDonor = assignedRole === "donor";
+    const donorAvailable = isDonor && data.availableToDonate;
 
     const profileValues = {
       id: user.id,
@@ -123,6 +124,7 @@ export async function POST(request: Request) {
         ? `SRID=4326;POINT(${data.longitude} ${data.latitude})`
         : null,
       availableToDonate: isDonor ? data.availableToDonate : false,
+      availabilityExpiresAt: donorAvailable ? new Date(now.getTime() + 72 * 60 * 60 * 1000) : null,
       lastDonationDate: isDonor ? (data.lastDonationDate ?? null) : null,
       completedAt: now,
       updatedAt: now,
@@ -142,6 +144,7 @@ export async function POST(request: Request) {
           locality: profileValues.locality,
           location: profileValues.location,
           availableToDonate: profileValues.availableToDonate,
+          availabilityExpiresAt: profileValues.availabilityExpiresAt,
           lastDonationDate: profileValues.lastDonationDate,
           completedAt: profileValues.completedAt,
           updatedAt: profileValues.updatedAt,

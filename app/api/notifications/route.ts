@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
@@ -24,7 +24,11 @@ export async function GET() {
     requiredBy: bloodRequests.requiredBy,
   }).from(donorNotifications)
     .innerJoin(bloodRequests, eq(donorNotifications.requestId, bloodRequests.id))
-    .where(and(eq(donorNotifications.donorId, user.id), eq(bloodRequests.status, "active")))
+    .where(and(
+      eq(donorNotifications.donorId, user.id),
+      eq(bloodRequests.status, "active"),
+      or(isNull(bloodRequests.requiredBy), gt(bloodRequests.requiredBy, new Date())),
+    ))
     .orderBy(desc(donorNotifications.createdAt)).limit(100);
   return NextResponse.json({ notifications });
 }

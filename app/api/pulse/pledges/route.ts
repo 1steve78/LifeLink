@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     from public.blood_requests r
     where r.id = ${body.data.requestId}::uuid
       and r.status = 'active'
+      and coalesce(r.required_by, r.created_at + interval '48 hours') > now()
       and exists (
         select 1 from public.find_eligible_donors(r.id) matched
         where matched.donor_id = ${user.id}::uuid

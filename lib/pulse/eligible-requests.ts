@@ -12,7 +12,8 @@ export type DonorMatch = {
   requiredBy: string | null;
   distanceKm: number;
   pledgeId: string | null;
-  pledgeStatus: "pledged" | "confirmed" | "completed" | "withdrawn" | null;
+  pledgeStatus: "pledged" | "accepted" | "confirmed" | "completed" | "withdrawn" | null;
+  donationStatus: "reported" | "confirmed" | null;
   longitude: number;
   latitude: number;
 };
@@ -37,12 +38,16 @@ export async function getEligibleRequestsForDonorMatching(donorId: string): Prom
            r.required_by as "requiredBy", m.distance_km as "distanceKm",
            pledge.id as "pledgeId",
            pledge.status as "pledgeStatus",
+           donation.status as "donationStatus",
            st_x(r.hospital_location::geometry) as longitude,
            st_y(r.hospital_location::geometry) as latitude
     from public.blood_requests r
     cross join lateral public.find_eligible_donors(r.id) m
     left join public.donor_pledges pledge on pledge.request_id = r.id and pledge.donor_id = m.donor_id
-    where r.status = 'active' and m.donor_id = ${donorId}::uuid
+    left join public.donation_reports donation on donation.pledge_id = pledge.id
+    where r.status = 'active'
+      and coalesce(r.required_by, r.created_at + interval '48 hours') > now()
+      and m.donor_id = ${donorId}::uuid
     order by r.urgency = 'critical' desc, r.required_by asc nulls last, m.distance_km asc
     limit 100
   `);
