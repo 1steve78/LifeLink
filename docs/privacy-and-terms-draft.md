@@ -1,6 +1,6 @@
 # LifeLink Privacy, Terms and Consent — Draft
 
-**Status:** working product draft for India-wide planning. It is not a legal notice and is not ready to publish. Complete the retention values and obtain review from qualified Indian legal counsel before inviting real users.
+**Status:** product and privacy review completed against the current repository and official Indian DPDP materials on 10 October 2026. This remains a draft, not legal advice or an approved notice. Qualified Indian counsel must review it before public launch. Product decisions below are defaults; code enforcement and vendor/backup details still need verification.
 
 ## Privacy notice draft
 
@@ -26,7 +26,15 @@ We do not sell personal data or blood. We do not scrape or automatically read Fa
 
 ### Retention, access and deletion
 
-Users may request export and deletion through account controls when implemented. Proposed deletion of supporting documents is a fixed period after moderator decision; the exact interval is **TBD**. Closed/rejected request retention and minimal audit retention are also **TBD** and must be decided before launch. A narrow record may be retained where needed for documented safety, fraud response or legal obligations; the final policy must identify the record, purpose and time limit. Do not promise deletion until the relevant workflows and database behavior are implemented and verified.
+**Selected retention defaults (pending implementation and legal review):**
+
+- Private supporting document images: delete within 30 days after a final moderation decision. If no decision is made, delete within 30 days after the request is cancelled or expires.
+- Closed, rejected, cancelled or fulfilled request and linked coordination data: delete or irreversibly anonymize within 90 days of closure. Non-identifying aggregate counts may be retained.
+- Minimal moderation/security audit entries: retain for up to 12 months after the event. Abuse-report reason, status and target reference: retain for up to 12 months after resolution; null the reporter identity when an account is deleted. A documented legal hold may extend a specific record only as long as necessary.
+- Application/security logs: retain for 30 days and redact personal fields. Incident-specific records may be retained up to 12 months when needed for investigation.
+- Verified account deletion request: remove personal account/profile/contact data and private documents from active systems within 30 days, after closing active requests. Backups may retain data until the configured provider backup cycle expires; confirm the actual cycle and explain it before launch.
+
+Users can request a JSON export or account deletion from Account Controls; export requires recent authentication. Account deletion removes account-linked data from active systems, subject to the narrowly defined audit/report exception above. These periods are product choices, not statutory safe harbors. Do not claim a period is being met until automated cleanup, backup behavior and deletion workflows are verified. A narrow record may be retained only for a documented safety, fraud-response or legal purpose and within the limits above.
 
 ### Security and urgent needs
 
@@ -41,7 +49,7 @@ LifeLink uses access controls and private document storage, but no internet serv
 - Users must provide accurate information they are authorized to share and must not post another person's sensitive information unnecessarily.
 - Contact details and donor identities must not be copied, published or used outside the authorized coordination.
 - Urgent cases must contact the hospital or blood bank directly.
-- Reports, moderation, account suspension and deletion are governed by a published process once finalized.
+- Reports and moderation may lead to request removal or account suspension after human review. Users can export their account data or request account deletion through Account Controls; the limited audit/report exceptions and retention periods in the privacy notice apply.
 
 ## Consent text draft
 
@@ -53,8 +61,17 @@ LifeLink uses access controls and private document storage, but no internet serv
 
 ## Decisions required before publication
 
-- Final supporting-document, closed-request and audit retention periods.
-- Contact point for privacy/data requests and incident reporting.
-- Approved purposes, AI provider/retention disclosure, and final user-facing wording.
-- Legal review of applicable Indian privacy, consumer, health-data and platform obligations.
+- Name and contact details of the data fiduciary/service operator and the privacy/grievance contact; configure a monitored email/address.
+- Confirm actual Supabase, NVIDIA NIM and other processor locations, retention, subprocessors and contractual terms. Never send a document to NIM until any required separate consent is recorded.
+- Confirm backup retention/restore behavior and verify deletion from active storage and database.
+- Implement and verify cleanup jobs for documents, closed request data, audit/report records and operational logs.
+- Have qualified Indian counsel review the notice, terms, consent, age policy, medical coordination language and applicable Indian privacy, consumer, health-data and platform obligations.
+
+## Product review notes (10 October 2026)
+
+- The draft aligns with the project rules: no public patient identity or contact, no donor directory, coarse aggregate map only, masked/in-app contact, no sale of blood, and no automated medical or final approval decision.
+- The selected first pilot is the Kolkata metropolitan area, with English and Bengali. This is an operational scope decision; requests should be accepted only where moderators and clinical escalation instructions are available.
+- The Digital Personal Data Protection Act, 2023 has phased commencement. The official commencement notification schedules the Act's main operational provisions for 18 months after 13 November 2025; the notified DPDP Rules, 2025 also have phased commencement. Counsel should check the applicable provisions and any later amendments at launch. See the [official India Code Act](https://www.indiacode.nic.in/indiacode/handle/123456789/22037?view_type=browse), [commencement notification](https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf), and [DPDP Rules notification](https://www.meity.gov.in/static/uploads/2025/11/53450e6e5dc0bfa85ebd78686cadad39.pdf).
+
+**Review outcome:** internal product/privacy consistency review complete; **legal review not completed**. This draft must not be represented as counsel-approved.
 

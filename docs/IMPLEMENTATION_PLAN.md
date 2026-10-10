@@ -12,7 +12,7 @@ The repository does **not** prove whether those migrations have been applied to 
 
 | Phase | Scope | Repo status |
 |---|---|---|
-| 0 | Foundation and product decisions | Partial: app, schema, Drizzle, and local health route exist; pilot decisions, policy/consent, retention, deployment and monitoring remain |
+| 0 | Foundation and product decisions | Partial: app/schema and policy defaults are recorded; retention enforcement, legal review, deployment and monitoring remain |
 | 1 | Accounts, profiles, trust and abuse controls | Partial: Supabase login and profile setup exist; deletion/export, age gate, tiers, rate limits/CAPTCHA and report/ban flow remain |
 | 2 | Request creation and verification | Substantially implemented: authenticated request submission, private documents, validation, AI checks, moderator review and clarification flow exist; async/manual fallback and document retention cleanup need work |
 | 3 | Matching and alerts | Partial: PostGIS compatibility/radius shortlist and donor in-app notifications exist; push, scheduled radius escalation, fatigue controls and blood-bank fallback remain |
@@ -52,9 +52,10 @@ The repository does **not** prove whether those migrations have been applied to 
 
 ### Remaining
 
-- [ ] Confirm the India-wide product scope and choose the first supervised city/campus pilot, initial languages, age policy and operational coverage. Do not equate national product scope with an unsupervised all-India launch.
-- [ ] Review/confirm the drafted architecture, access matrix, state transitions, privacy notice, terms and consent. Select retention periods and deletion exceptions; obtain appropriate legal review before launch.
-- [ ] Decide which patient/contact fields are truly required and when they are deleted. Do not copy the pasted plan’s blanket “delete all documents immediately” without ensuring the human review workflow has completed.
+- [x] Confirm India-wide product goal with staged regional operations. First supervised pilot decision: Kolkata metropolitan area, English and Bengali; do not open areas without moderation and hospital/blood-bank escalation coverage.
+- [x] Record product retention defaults in `docs/decisions.md` and `docs/privacy-and-terms-draft.md`: supporting images 30 days after final decision or closure, closed request data 90 days, minimal audit/report records up to 12 months, operational logs 30 days, and active-system account deletion within 30 days.
+- [ ] Review/confirm architecture, access matrix, state transitions, privacy notice, terms and consent with qualified Indian counsel before launch. Repository review is not legal approval.
+- [ ] Implement and verify cleanup for supporting images, closed request and linked coordination data, audit/report records, and logs according to the chosen retention periods. Decide which patient/contact fields are required and ensure account deletion and provider backup behavior match the notice.
 - [ ] Identify the currently configured Supabase project as staging or production. Create/link a separate staging Supabase project, install/configure Supabase CLI and `supabase/config.toml`, establish migration history, apply/reconcile migrations `001`–`006` there, and compare schema drift. Migration `006` is applied only to the configured target; other environment status is unknown.
 - [ ] Run the broader SQL audit, then test the direct RLS and API route boundaries as requester, donor, moderator and unrelated signed-in user. Verify no user can list other profiles.
 - [ ] Confirm local/staging/production environment variables, backups, monitoring, error reporting, deployment and rollback procedures. A staging restore and deployment rollback are external operational checks.
