@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ShieldCheck,
   Users,
@@ -25,6 +26,7 @@ import { createClient } from "@/lib/supabase/client";
 import { UserRole, BloodGroup } from "@/types/database.types";
 
 export default function AuthPage() {
+  const router = useRouter();
   const supabase = createClient();
 
   const [tab, setTab] = useState<"signin" | "create">("signin");
@@ -80,7 +82,23 @@ export default function AuthPage() {
       if (error) {
         setErrorMsg(error.message);
       } else {
-        setSuccessMsg("Signed in successfully! Welcome back.");
+        setSuccessMsg("Signed in successfully! Checking profile status...");
+        try {
+          const profileRes = await fetch("/api/profile");
+          const profileData = await profileRes.json();
+          if (profileData && !profileData.isComplete) {
+            router.push("/profile/setup");
+          } else {
+            const destination = profileData?.profile?.role === "donor"
+              ? "/donor/pulse"
+              : profileData?.profile?.role === "moderator"
+                ? "/moderator"
+                : "/requests";
+            router.push(destination);
+          }
+        } catch {
+          router.push("/profile/setup");
+        }
       }
     } catch (err: unknown) {
       setErrorMsg(
@@ -99,6 +117,10 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      if (selectedRole === "moderator") {
+        setErrorMsg("Moderator accounts are provisioned by LifeLink administrators. Choose Requester or Donor to create an account.");
+        return;
+      }
       const roleToSave = selectedRole;
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -129,8 +151,9 @@ export default function AuthPage() {
           }
         }
         setSuccessMsg(
-          "Account created and signed in successfully! Welcome to LifeLink."
+          "Account created! Redirecting to complete your profile..."
         );
+        router.push("/profile/setup");
       }
     } catch (err: unknown) {
       setErrorMsg(
@@ -170,14 +193,23 @@ export default function AuthPage() {
               <span className="font-mono text-xs">{currentUser.id.slice(0, 8)}...</span>)
             </span>
           </div>
-          <button
-            onClick={handleSignOut}
-            disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-emerald-800 hover:bg-emerald-100 transition-colors font-medium text-xs"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Sign Out
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/profile/setup")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-xs shadow-sm"
+            >
+              <span>Profile Setup</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleSignOut}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-emerald-300 rounded-lg text-emerald-800 hover:bg-emerald-100 transition-colors font-medium text-xs"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
+            </button>
+          </div>
         </div>
       )}
 
