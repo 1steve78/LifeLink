@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Navbar } from "@/components/landing/Navbar";
+import { useRouter } from "next/navigation";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { CommunitySection } from "@/components/landing/CommunitySection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
@@ -14,8 +14,25 @@ import { RequestModal } from "@/components/landing/RequestModal";
 import { FindDonorModal } from "@/components/landing/FindDonorModal";
 
 export default function LandingPage() {
+  const router = useRouter();
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isDonorModalOpen, setIsDonorModalOpen] = useState(false);
+
+  // Redirect logged-in users straight to their role dashboard
+  useEffect(() => {
+    fetch("/api/profile", { cache: "no-store" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (!data?.profile?.role) return;
+        const role = data.profile.role as string;
+        const destination =
+          role === "donor" ? "/donor/pulse" :
+          role === "moderator" ? "/moderator" :
+          "/requests";
+        router.replace(destination);
+      })
+      .catch(() => { /* not logged in — stay on landing */ });
+  }, [router]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -24,16 +41,10 @@ export default function LandingPage() {
       url.searchParams.delete("request");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
-  }, []);
+   }, []);
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 flex flex-col font-sans selection:bg-[#E23B42] selection:text-white">
-      {/* Navigation Bar (Image 1 Header) */}
-      <Navbar
-        onOpenRequestModal={() => setIsRequestModalOpen(true)}
-        onOpenDonorModal={() => setIsDonorModalOpen(true)}
-      />
-
       <main className="flex-1">
         {/* Section 1: Hero Section with Sunset Visual & Donor Impact Card (Image 1) */}
         <HeroSection

@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Sign in to continue verification." }, { status: 401 });
 
-  const limit = await consumeRateLimit(request, user.id, "ai-risk-screen", { limit: 8, windowSeconds: 60 * 60 });
+  const limit = await consumeRateLimit(request, user.id, "ai-risk-screen", { limit: 50, windowSeconds: 60 * 60 });
   if (!limit.allowed) return NextResponse.json({ error: "Too many screening attempts. Wait before trying again." }, { status: 429 });
 
   const body = requestBodySchema.safeParse(await request.json().catch(() => null));

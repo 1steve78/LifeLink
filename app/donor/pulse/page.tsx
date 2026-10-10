@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Bell, Droplet, MapPin, RefreshCw, ShieldCheck } from "lucide-react";
 import type { DonorMatch } from "@/lib/pulse/eligible-requests";
@@ -149,12 +148,12 @@ export default function DonorPulsePage() {
       <div className="mx-auto max-w-6xl space-y-7">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <Link href="/" className="text-sm font-semibold text-neutral-500 hover:text-red-700">← LifeLink home</Link>
-            <h1 className="mt-2 flex items-center gap-2 text-3xl font-extrabold"><Droplet className="h-7 w-7 fill-red-600 text-red-600" />Emergency Pulse</h1>
+            <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Droplet className="h-6 w-6 fill-red-600 text-red-600" />Emergency Pulse</h1>
             <p className="mt-1 text-sm text-neutral-600">Approved nearby requests that match your donor profile.</p>
           </div>
-          <div className="flex flex-wrap gap-2"><Link href="/account" className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50">Account controls</Link><button onClick={() => void refresh()} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"><RefreshCw className="h-4 w-4" />Refresh</button></div>
+          <button onClick={() => void refresh()} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"><RefreshCw className="h-4 w-4" />Refresh</button>
         </header>
+
 
         {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="h-4 w-4" />{error}</div>}
         <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-4">

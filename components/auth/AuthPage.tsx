@@ -45,26 +45,38 @@ export default function AuthPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
 
-  // Check current session on load
+  // Check current session on load — redirect if already signed in
   useEffect(() => {
     async function checkUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       setCurrentUser(user);
+      // Already logged in — go straight to their dashboard
+      try {
+        const profileRes = await fetch("/api/profile", { cache: "no-store" });
+        const profileData = profileRes.ok ? await profileRes.json() : null;
+        const role = profileData?.profile?.role as string | undefined;
+        if (!profileData?.profile?.completedAt && !role) {
+          router.replace("/profile/setup");
+        } else {
+          router.replace(
+            role === "donor" ? "/donor/pulse" :
+            role === "moderator" ? "/moderator" :
+            "/requests"
+          );
+        }
+      } catch {
+        // leave on login page if profile fetch fails
+      }
     }
     checkUser();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(session?.user ?? null);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+    return () => { subscription.unsubscribe(); };
+  }, [supabase, router]);
 
   // Handle Sign In
   const handleSignIn = async (e: React.FormEvent) => {
