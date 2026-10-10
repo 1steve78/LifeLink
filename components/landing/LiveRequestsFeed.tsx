@@ -1,81 +1,54 @@
 "use client";
 
 import React, { useState } from "react";
-import { Droplet, MapPin, Clock, Building2, ShieldCheck, Heart, Share2, Check } from "lucide-react";
+import { Droplet, MapPin, Building2 } from "lucide-react";
 
 interface RequestItem {
   id: string;
-  patientName: string;
   bloodGroup: string;
   unitsNeeded: number;
   hospital: string;
   city: string;
-  distance: string;
   urgency: "critical" | "urgent" | "moderate";
-  timeAgo: string;
-  verified: boolean;
-  pledgesCount: number;
 }
 
 const mockRequests: RequestItem[] = [
   {
     id: "req-1",
-    patientName: "Aarav Sharma (ICU Ward 4)",
     bloodGroup: "B+",
     unitsNeeded: 2,
     hospital: "City Care Hospital",
     city: "Connaught Place",
-    distance: "2.8 km",
     urgency: "critical",
-    timeAgo: "2 mins ago",
-    verified: true,
-    pledgesCount: 1,
   },
   {
     id: "req-2",
-    patientName: "Meera Kulkarni (Emergency OT)",
     bloodGroup: "O-",
     unitsNeeded: 3,
     hospital: "Apex Super Specialty",
     city: "Koramangala",
-    distance: "4.1 km",
     urgency: "critical",
-    timeAgo: "7 mins ago",
-    verified: true,
-    pledgesCount: 2,
   },
   {
     id: "req-3",
-    patientName: "Deepak Verma (Post-Op Care)",
     bloodGroup: "A+",
     unitsNeeded: 1,
     hospital: "Apollo Health City",
     city: "Jubilee Hills",
-    distance: "5.6 km",
     urgency: "urgent",
-    timeAgo: "14 mins ago",
-    verified: true,
-    pledgesCount: 0,
   },
   {
     id: "req-4",
-    patientName: "Pooja Nair (Platelet Apheresis)",
     bloodGroup: "AB+",
     unitsNeeded: 2,
     hospital: "Fortis Escorts Institute",
     city: "Okhla",
-    distance: "6.2 km",
     urgency: "urgent",
-    timeAgo: "22 mins ago",
-    verified: true,
-    pledgesCount: 1,
   },
 ];
 
 export const LiveRequestsFeed: React.FC = () => {
   const [selectedBlood, setSelectedBlood] = useState<string>("All");
-  const [pledgedIds, setPledgedIds] = useState<Record<string, boolean>>({});
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const bloodFilters = ["All", "O-", "O+", "A+", "A-", "B+", "B-", "AB+"];
 
@@ -83,18 +56,6 @@ export const LiveRequestsFeed: React.FC = () => {
     selectedBlood === "All"
       ? mockRequests
       : mockRequests.filter((r) => r.bloodGroup === selectedBlood);
-
-  const handlePledge = (id: string) => {
-    setPledgedIds((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  const handleShare = (id: string) => {
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
 
   return (
     <section className="py-20 sm:py-24 bg-white border-t border-neutral-100">
@@ -104,13 +65,13 @@ export const LiveRequestsFeed: React.FC = () => {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-[#C81E1E] text-xs font-semibold mb-3">
               <span className="w-2 h-2 rounded-full bg-[#C81E1E] animate-ping" />
-              Live Emergency Pulse
+              Example request cards
             </div>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-neutral-900 tracking-tight">
-              Urgent Requests in Your Radius
+              A privacy-safe request preview
             </h2>
             <p className="mt-2 text-neutral-600 text-sm sm:text-base">
-              Verified clinical demands matching nearby active donors right now.
+              Sample content only. Real requests are shared only after verification and moderator approval.
             </p>
           </div>
 
@@ -135,8 +96,6 @@ export const LiveRequestsFeed: React.FC = () => {
         {/* Requests Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredRequests.map((req) => {
-            const isPledged = pledgedIds[req.id];
-
             return (
               <div
                 key={req.id}
@@ -164,9 +123,9 @@ export const LiveRequestsFeed: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Patient & Hospital */}
+                  {/* Public request preview: no patient or requester identity. */}
                   <h3 className="font-bold text-neutral-900 text-base leading-snug group-hover:text-[#C81E1E] transition-colors">
-                    {req.patientName}
+                    Blood request
                   </h3>
 
                   <div className="mt-2 flex items-center gap-2 text-xs font-medium text-neutral-600">
@@ -174,50 +133,21 @@ export const LiveRequestsFeed: React.FC = () => {
                     <span className="truncate">{req.hospital}</span>
                   </div>
 
-                  {/* Distance & Time */}
+                  {/* Area only; never show an individual donor distance. */}
                   <div className="mt-2.5 flex items-center justify-between text-xs text-neutral-500">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                      {req.distance} • {req.city}
-                    </span>
-                    <span className="flex items-center gap-1 text-neutral-400">
-                      <Clock className="w-3 h-3" />
-                      {req.timeAgo}
+                      {req.city}
                     </span>
                   </div>
 
-                  {/* Verification Pill */}
-                  <div className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>3-Gate Clinical Verified</span>
+                  <div className="mt-3 inline-flex items-center rounded-md border border-neutral-200 bg-neutral-50 px-2 py-1 text-[11px] font-semibold text-neutral-600">
+                    Sample preview · not a live request
                   </div>
                 </div>
 
-                {/* Bottom Actions */}
-                <div className="mt-5 pt-4 border-t border-neutral-100 flex items-center gap-2">
-                  <button
-                    onClick={() => handlePledge(req.id)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                      isPledged
-                        ? "bg-emerald-600 text-white shadow-sm"
-                        : "bg-[#C81E1E] hover:bg-[#B01A1A] text-white shadow-xs"
-                    }`}
-                  >
-                    <Heart className={`w-3.5 h-3.5 ${isPledged ? "fill-white" : ""}`} />
-                    <span>{isPledged ? "Pledge Sent!" : "Pledge to Donate"}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleShare(req.id)}
-                    title="Share Request"
-                    className="p-2.5 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-600 transition-colors"
-                  >
-                    {copiedId === req.id ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    ) : (
-                      <Share2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
+                <div className="mt-5 pt-4 border-t border-neutral-100 text-xs text-neutral-500">
+                  Live request links will appear here after that feature is available.
                 </div>
               </div>
             );
