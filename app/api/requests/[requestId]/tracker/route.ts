@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
-import { bloodRequests, donorNotifications, donorPledges, profiles, requestTrackerEvents, moderationAuditEvents, requesterInformationResponses } from "@/lib/db/schema";
+import { bloodRequests, donationReports, donorNotifications, donorPledges, profiles, requestTrackerEvents, moderationAuditEvents, requesterInformationResponses } from "@/lib/db/schema";
 import { isAuthorizedModerator } from "@/lib/verification/moderator-auth";
 
 const requestIdSchema = z.string().uuid();
-const actionSchema = z.object({ action: z.enum(["fulfilled", "cancelled"]) });
+const actionSchema = z.object({ action: z.enum(["cancelled"]) });
 
 async function authorize(requestId: string) {
   const supabase = await createClient();
@@ -33,10 +33,11 @@ export async function GET(_request: Request, context: { params: { requestId: str
   if ("response" in access) return access.response;
   const requestId = access.bloodRequest.id;
 
-  const [[counts], [matchedCount], events, [informationRequest], [informationResponse]] = await Promise.all([
+  const [[counts], [matchedCount], events, [informationRequest], [informationResponse], donations] = await Promise.all([
     db.select({
-      pledgeCount: sql<number>`count(*) filter (where ${donorPledges.status} in ('pledged', 'confirmed'))::int`,
-      confirmedCount: sql<number>`count(*) filter (where ${donorPledges.status} = 'confirmed')::int`,
+      pledgeCount: sql<number>`count(*) filter (where ${donorPledges.status} in ('pledged', 'accepted', 'confirmed', 'completed'))::int`,
+      acceptedCount: sql<number>`count(*) filter (where ${donorPledges.status} in ('accepted', 'confirmed', 'completed'))::int`,
+      confirmedCount: sql<number>`count(*) filter (where ${donorPledges.status} in ('confirmed', 'completed'))::int`,
     }).from(donorPledges).where(eq(donorPledges.requestId, requestId)),
     db.select({ value: count() }).from(donorNotifications).where(eq(donorNotifications.requestId, requestId)),
     db.select({
@@ -54,7 +55,21 @@ export async function GET(_request: Request, context: { params: { requestId: str
     db.select({ message: requesterInformationResponses.message, createdAt: requesterInformationResponses.createdAt })
       .from(requesterInformationResponses).where(eq(requesterInformationResponses.requestId, requestId))
       .orderBy(desc(requesterInformationResponses.createdAt)).limit(1),
+    db.select({
+      id: donationReports.id,
+      unitsDonated: donationReports.unitsDonated,
+      status: donationReports.status,
+      reportedAt: donationReports.reportedAt,
+      confirmedAt: donationReports.confirmedAt,
+    }).from(donationReports).innerJoin(donorPledges, eq(donationReports.pledgeId, donorPledges.id))
+      .where(eq(donorPledges.requestId, requestId)).orderBy(desc(donationReports.reportedAt)),
   ]);
+
+  const [donationTotals] = await db.select({
+    reportedDonationUnits: sql<number>`coalesce(sum(${donationReports.unitsDonated}), 0)::int`,
+    confirmedDonationUnits: sql<number>`coalesce(sum(${donationReports.unitsDonated}) filter (where ${donationReports.status} = 'confirmed'), 0)::int`,
+  }).from(donationReports).innerJoin(donorPledges, eq(donationReports.pledgeId, donorPledges.id))
+    .where(eq(donorPledges.requestId, requestId));
 
   return NextResponse.json({
     request: {
@@ -72,8 +87,12 @@ export async function GET(_request: Request, context: { params: { requestId: str
     progress: {
       matchedCount: matchedCount.value,
       pledgeCount: counts.pledgeCount,
+      acceptedCount: counts.acceptedCount,
       confirmedCount: counts.confirmedCount,
+      reportedDonationUnits: donationTotals.reportedDonationUnits,
+      confirmedDonationUnits: donationTotals.confirmedDonationUnits,
     },
+    donations,
     events: events.reverse(),
     informationRequest: access.bloodRequest.requesterId === access.user.id && access.bloodRequest.reviewState === "needs_information"
       ? {
@@ -91,15 +110,15 @@ export async function PATCH(request: Request, context: { params: { requestId: st
     return NextResponse.json({ error: "Invalid request ID." }, { status: 400 });
   }
   const body = actionSchema.safeParse(await request.json().catch(() => null));
-  if (!body.success) return NextResponse.json({ error: "Action must be fulfilled or cancelled." }, { status: 400 });
+  if (!body.success) return NextResponse.json({ error: "Only cancellation is available here; fulfillment follows confirmed donation receipts." }, { status: 400 });
   const access = await authorize(context.params.requestId);
   if ("response" in access) return access.response;
   const isRequesterOwner = access.bloodRequest.requesterId === access.user.id;
   if (!isRequesterOwner && !access.isModerator) {
-    return NextResponse.json({ error: "Only the requester or an authorized moderator can close this request." }, { status: 403 });
+    return NextResponse.json({ error: "Only the requester or an authorized moderator can cancel this request." }, { status: 403 });
   }
   if (access.bloodRequest.status !== "active") {
-    return NextResponse.json({ error: "Only an active request can be fulfilled or cancelled." }, { status: 409 });
+    return NextResponse.json({ error: "Only an active request can be cancelled." }, { status: 409 });
   }
   const [updated] = await db.update(bloodRequests).set({
         status: body.data.action,

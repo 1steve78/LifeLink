@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
+import { donorAvailabilityBand } from "@/lib/pulse/matching-rules";
 
 export const runtime = "nodejs";
 
@@ -19,22 +20,25 @@ export async function GET() {
            r.hospital_name as "hospitalName", r.urgency, r.status,
            st_x(r.hospital_location::geometry) as longitude,
            st_y(r.hospital_location::geometry) as latitude,
-           coalesce(matches.donor_count, 0)::int as "nearbyDonorCount",
-           matches.nearest_distance_km as "nearestDistanceKm"
+           coalesce(matches.donor_count, 0)::int as "donorCount"
     from public.blood_requests r
     left join lateral (
-      select count(*)::int as donor_count, min(m.distance_km)::float8 as nearest_distance_km
+      select count(*)::int as donor_count
       from public.find_eligible_donors(r.id) m
     ) matches on true
     where r.requester_id = ${user.id}::uuid
       and r.status = 'active'
+      and coalesce(r.required_by, r.created_at + interval '48 hours') > now()
       and r.hospital_location is not null
     order by r.created_at desc
   `);
   const requests = Array.from(result as unknown as {
     requestId: string; bloodGroup: string; unitsNeeded: number; hospitalName: string;
     urgency: string; status: string; longitude: number; latitude: number;
-    nearbyDonorCount: number; nearestDistanceKm: number | null;
-  }[]);
+    donorCount: number;
+  }[]).map(({ donorCount, ...request }) => ({
+    ...request,
+    donorAvailability: donorAvailabilityBand(donorCount),
+  }));
   return NextResponse.json({ requests });
 }

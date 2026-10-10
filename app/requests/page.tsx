@@ -24,6 +24,7 @@ const statusStyles: Record<string, string> = {
   fulfilled: "bg-neutral-100 text-neutral-700",
   rejected: "bg-red-50 text-red-800",
   cancelled: "bg-neutral-100 text-neutral-600",
+  expired: "bg-orange-50 text-orange-800",
 };
 
 export default function RequestsPage() {
@@ -50,13 +51,13 @@ export default function RequestsPage() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
-  const nearbyMatches = nearby.filter((item) => item.nearbyDonorCount > 0);
+  const nearbyMatches = nearby.filter((item) => item.donorAvailability !== "none");
 
   return <main className="min-h-screen bg-[#fdf9f8] px-4 py-8 text-neutral-900 sm:px-6">
     <div className="mx-auto max-w-6xl space-y-7">
       <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
         <div><Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-red-700"><Droplet className="h-4 w-4 fill-red-700" />LifeLink</Link><h1 className="mt-3 text-3xl font-extrabold">Your blood requests</h1><p className="mt-2 text-sm text-neutral-600">Track verification, donor availability, and request progress.</p></div>
-        <div className="flex gap-2"><button onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</button><Link href="/?request=1" className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800"><Plus className="h-4 w-4" />New request</Link></div>
+        <div className="flex flex-wrap gap-2"><Link href="/account" className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50">Account controls</Link><button onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</button><Link href="/?request=1" className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800"><Plus className="h-4 w-4" />New request</Link></div>
       </header>
 
       {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><span className="inline-flex items-center gap-2"><AlertCircle className="h-4 w-4" />{error}</span>{error.toLowerCase().includes("sign in") && <Link href="/login" className="font-bold underline">Sign in</Link>}</div>}

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { bloodRequests, moderationAuditEvents, profiles, requestVerificationEvents, requesterInformationResponses } from "@/lib/db/schema";
 import { validateRequestSubmission, validateSupportingDocument } from "@/lib/verification/validate-request";
 import { isAuthorizedModerator } from "@/lib/verification/moderator-auth";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -114,6 +115,9 @@ export async function POST(request: Request) {
   if (!profile || profile.role !== "requester") {
     return NextResponse.json({ error: "A requester account is required to submit this form." }, { status: 403 });
   }
+
+  const limit = await consumeRateLimit(request, user.id, "blood-request-create", { limit: 3, windowSeconds: 24 * 60 * 60 });
+  if (!limit.allowed) return NextResponse.json({ error: "You have reached the request limit. Try again in 24 hours." }, { status: 429 });
 
   let formData: FormData;
   try {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, ExternalLink, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import ReportsQueue from "@/components/moderator/ReportsQueue";
 
 type Verification = { gate: string; status: string; details: Record<string, unknown>; model: string | null; createdAt: string };
 type ReviewRequest = {
@@ -81,6 +82,7 @@ export default function ModeratorDashboardPage() {
         <button onClick={() => void refresh()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh queue</button>
       </header>
       {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
+      <ReportsQueue />
       {loading && requests.length === 0 ? <div className="flex items-center gap-2 rounded-2xl bg-white p-8 text-neutral-600"><Loader2 className="h-5 w-5 animate-spin" />Loading pending requests…</div> : requests.length === 0 ? <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-neutral-600">No pending requests require review.</div> : <div className="space-y-5">
         {requests.map((item) => {
           const flagged = item.verification.some((event) => event.status === "flagged");

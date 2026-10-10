@@ -19,7 +19,8 @@ type TrackerData = {
     reviewState: string;
     createdAt: string;
   };
-  progress: { matchedCount: number; pledgeCount: number; confirmedCount: number };
+  progress: { matchedCount: number; pledgeCount: number; acceptedCount: number; confirmedCount: number; reportedDonationUnits: number; confirmedDonationUnits: number };
+  donations: { id: string; unitsDonated: number; status: "reported" | "confirmed"; reportedAt: string; confirmedAt: string | null }[];
   events: { id: string; eventType: string; requestStatus: string; pledgeCount: number; confirmedCount: number; createdAt: string }[];
   canManageRequest: boolean;
   informationRequest: { reason: string; response: { message: string; createdAt: string } | null; canRespond: boolean } | null;
@@ -31,9 +32,13 @@ const eventLabels: Record<string, string> = {
   request_activated: "Request approved; compatible donors notified",
   request_rejected: "Request rejected by a moderator",
   request_cancelled: "Request cancelled",
+  request_expired: "Request expired after its required-by time",
   request_fulfilled: "Need marked as fulfilled",
   donor_pledged: "A donor pledged to help",
+  donor_accepted: "A donor accepted the request",
   donor_confirmed: "A donor confirmed coordination",
+  donor_donation_reported: "A donor reported a donation",
+  donor_donation_confirmed: "Donation receipt confirmed",
   donor_withdrew: "A donor withdrew their pledge",
   request_information_needed: "The moderator requested more information",
 };
@@ -74,7 +79,7 @@ export default function RequestTrackerPage({ params }: { params: { requestId: st
     return () => { void supabase.removeChannel(channel); };
   }, [params.requestId, refresh]);
 
-  const closeRequest = async (action: "fulfilled" | "cancelled") => {
+  const closeRequest = async (action: "cancelled") => {
     setSaving(true);
     setError("");
     try {
@@ -92,6 +97,20 @@ export default function RequestTrackerPage({ params }: { params: { requestId: st
     } finally {
       setSaving(false);
     }
+  };
+
+  const confirmDonation = async (donationId: string) => {
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/requests/${params.requestId}/donations/${donationId}`, { method: "PATCH" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not confirm the donation receipt.");
+      await refresh();
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not confirm the donation receipt.");
+    } finally { setSaving(false); }
   };
 
   const sendInformation = async () => {
@@ -134,8 +153,17 @@ export default function RequestTrackerPage({ params }: { params: { requestId: st
           <section className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-neutral-200 bg-white p-5"><div className="flex items-center gap-2 text-sm font-semibold text-neutral-500"><Users className="h-4 w-4" />Matched</div><p className="mt-2 text-3xl font-extrabold">{data.progress.matchedCount}</p><p className="mt-1 text-xs text-neutral-500">Donors notified after approval</p></div>
             <div className="rounded-2xl border border-neutral-200 bg-white p-5"><div className="flex items-center gap-2 text-sm font-semibold text-neutral-500"><HeartHandshake className="h-4 w-4" />Pledged</div><p className="mt-2 text-3xl font-extrabold">{data.progress.pledgeCount}</p><p className="mt-1 text-xs text-neutral-500">Unique current pledges</p></div>
-            <div className="rounded-2xl border border-neutral-200 bg-white p-5"><div className="flex items-center gap-2 text-sm font-semibold text-neutral-500"><CheckCircle2 className="h-4 w-4" />Confirmed</div><p className="mt-2 text-3xl font-extrabold">{data.progress.confirmedCount}</p><p className="mt-1 text-xs text-neutral-500">Donors who confirmed coordination</p></div>
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5"><div className="flex items-center gap-2 text-sm font-semibold text-neutral-500"><CheckCircle2 className="h-4 w-4" />Donation units</div><p className="mt-2 text-3xl font-extrabold">{data.progress.confirmedDonationUnits}<span className="text-base text-neutral-500"> / {data.request.unitsNeeded}</span></p><p className="mt-1 text-xs text-neutral-500">{data.progress.reportedDonationUnits} reported · {data.progress.acceptedCount} accepted · {data.progress.confirmedCount} coordinated</p></div>
           </section>
+
+          {data.canManageRequest && data.donations.length > 0 && <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="text-xl font-bold">Donation reports</h2>
+            <p className="mt-1 text-sm text-neutral-600">Confirm only the units you received. This records receipt; it does not assess medical eligibility.</p>
+            <ul className="mt-4 space-y-3">{data.donations.map((donation) => <li key={donation.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-100 p-4">
+              <div><p className="font-semibold">{donation.unitsDonated} {donation.unitsDonated === 1 ? "unit" : "units"} · {donation.status === "confirmed" ? "Receipt confirmed" : "Awaiting your confirmation"}</p><p className="text-xs text-neutral-500">Reported {new Date(donation.reportedAt).toLocaleString()}</p></div>
+              {donation.status === "reported" && data.request.status === "active" && <button disabled={saving} onClick={() => void confirmDonation(donation.id)} className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60">Confirm received</button>}
+            </li>)}</ul>
+          </section>}
 
           <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="flex items-center gap-2 text-xl font-bold"><BellRing className="h-5 w-5 text-red-600" />Progress timeline</h2>
@@ -147,9 +175,8 @@ export default function RequestTrackerPage({ params }: { params: { requestId: st
 
           {data.canManageRequest && data.request.status === "active" && <section className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-5 sm:flex-row sm:justify-end">
             <button disabled={saving} onClick={() => void closeRequest("cancelled")} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-60">Cancel request</button>
-            <button disabled={saving} onClick={() => void closeRequest("fulfilled")} className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60">Confirm need is fulfilled</button>
           </section>}
-          <p className="px-1 text-xs leading-relaxed text-neutral-500">A pledge records a donor’s intention only. Do not mark the need fulfilled until the requester or an authorized moderator confirms it has been met.</p>
+          <p className="px-1 text-xs leading-relaxed text-neutral-500">Requests stop matching donors after the required-by time and are automatically closed by the scheduled expiry job. Confirmed donation receipts close fully met requests sooner.</p>
         </>}
       </div>
     </main>

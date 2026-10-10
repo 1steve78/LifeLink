@@ -28,6 +28,8 @@ export async function POST(request: Request, context: { params: { requestId: str
     return NextResponse.json({ error: "This account is not authorized to moderate requests." }, { status: 403 });
   }
 
+  await db.execute(sql`select public.expire_blood_requests()`);
+
   const parsed = reviewSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Action must be approve, reject, or request_information." }, { status: 400 });
   const reason = parsed.data.reason?.trim() ?? "";
