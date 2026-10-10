@@ -7,6 +7,7 @@ import { bloodRequests, requestVerificationEvents } from "@/lib/db/schema";
 import { analyzeHospitalDocument, documentModelName } from "@/lib/verification/nvidia-nim";
 import { compareHospitalDocument } from "@/lib/verification/document-comparison";
 import { validateSupportingDocument } from "@/lib/verification/validate-request";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return NextResponse.json({ error: "Sign in to continue verification." }, { status: 401 });
+
+  const limit = await consumeRateLimit(request, user.id, "ai-document-screen", { limit: 5, windowSeconds: 60 * 60 });
+  if (!limit.allowed) return NextResponse.json({ error: "Too many document checks. Wait before trying again." }, { status: 429 });
 
   const body = requestBodySchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "A valid requestId is required." }, { status: 400 });

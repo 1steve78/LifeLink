@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { RequestSubmission, SupportedDocument } from "./validate-request";
 
-const model = process.env.NVIDIA_NIM_MODEL || "meta/llama-3.2-90b-vision-instruct";
+const model = process.env.NVIDIA_NIM_MODEL || "meta/llama-3.2-11b-vision-instruct";
 const endpoint = process.env.NVIDIA_NIM_BASE_URL || "https://integrate.api.nvidia.com/v1/chat/completions";
 
 const documentReportSchema = z.object({

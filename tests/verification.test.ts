@@ -3,7 +3,7 @@ import { compareHospitalDocument } from "../lib/verification/document-comparison
 import { calculateRiskSignals } from "../lib/verification/risk-rules";
 import { validateRequestSubmission, validateSupportingDocument } from "../lib/verification/validate-request";
 import { isAuthorizedModerator } from "../lib/verification/moderator-auth";
-import { analyzeHospitalDocument, screenRequestRisk } from "../lib/verification/nvidia-nim";
+import { analyzeHospitalDocument, documentModelName, screenRequestRisk } from "../lib/verification/nvidia-nim";
 import type { DocumentReport } from "../lib/verification/nvidia-nim";
 
 const future = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -147,8 +147,8 @@ describe("moderator authorization and AI failure handling", () => {
     process.env.NVIDIA_NIM_API_KEY = "test-key";
     const previousFetch = globalThis.fetch;
     const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body)) as { model: string; messages: unknown[] };
-      expect(body.model).toBe("meta/llama-3.2-90b-vision-instruct");
+      const body = JSON.parse(String(init?.body)) as { model: string; messages: Array<{ role: string }> };
+      expect(body.model).toBe(documentModelName());
       expect(body.messages).toHaveLength(1);
       expect(body.messages[0].role).toBe("user");
       return Response.json({ choices: [{ message: { content: `Result:\n{"risk_level":"low","requires_review":false,"signals":[],"rationale":"No additional signals."}` } }] });
