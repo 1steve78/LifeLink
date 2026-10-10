@@ -21,7 +21,8 @@ create type public.request_status as enum (
   'active',
   'fulfilled',
   'rejected',
-  'cancelled'
+  'cancelled',
+  'expired'
 );
 
 create type public.verification_gate as enum (
@@ -43,6 +44,7 @@ create table public.profiles (
   location geography(point, 4326),
   last_donation_date date,
   available_to_donate boolean not null default false,
+  availability_expires_at timestamptz,
   completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -56,7 +58,7 @@ create table public.profiles (
 -- 4. Create Blood Requests Table (with PostGIS Point for hospital location)
 create table public.blood_requests (
   id uuid primary key default gen_random_uuid(),
-  requester_id uuid not null references public.profiles(id),
+  requester_id uuid not null references public.profiles(id) on delete cascade,
   patient_name text,
   patient_reference text,
   patient_age integer check (patient_age is null or patient_age between 0 and 120),
@@ -95,14 +97,14 @@ create table public.request_verification_events (
   status public.verification_result_status not null,
   details jsonb not null default '{}'::jsonb,
   model text,
-  performed_by uuid references public.profiles(id),
+  performed_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
 create table public.moderation_audit_events (
   id uuid primary key default gen_random_uuid(),
-  request_id uuid not null references public.blood_requests(id),
-  moderator_id uuid not null references public.profiles(id),
+  request_id uuid not null references public.blood_requests(id) on delete cascade,
+  moderator_id uuid references public.profiles(id) on delete set null,
   action text not null check (action in ('approve', 'reject', 'request_information')),
   previous_status public.request_status not null,
   new_status public.request_status not null,
@@ -112,8 +114,8 @@ create table public.moderation_audit_events (
 
 create table public.requester_information_responses (
   id uuid primary key default gen_random_uuid(),
-  request_id uuid not null references public.blood_requests(id),
-  requester_id uuid not null references public.profiles(id),
+  request_id uuid not null references public.blood_requests(id) on delete cascade,
+  requester_id uuid not null references public.profiles(id) on delete cascade,
   message text not null check (length(btrim(message)) between 5 and 2000),
   created_at timestamptz not null default now()
 );
@@ -122,11 +124,25 @@ create table public.requester_information_responses (
 create table public.donor_pledges (
   id uuid primary key default gen_random_uuid(),
   request_id uuid not null references public.blood_requests(id) on delete cascade,
-  donor_id uuid not null references public.profiles(id),
-  status text not null default 'pledged' check (status in ('pledged', 'confirmed', 'completed', 'withdrawn')),
+  donor_id uuid not null references public.profiles(id) on delete cascade,
+  status text not null default 'pledged' check (status in ('pledged', 'accepted', 'confirmed', 'completed', 'withdrawn')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (request_id, donor_id)
+);
+
+create table public.donation_reports (
+  id uuid primary key default gen_random_uuid(),
+  pledge_id uuid not null unique references public.donor_pledges(id) on delete cascade,
+  units_donated integer not null check (units_donated between 1 and 10),
+  status text not null default 'reported' check (status in ('reported', 'confirmed')),
+  reported_at timestamptz not null default now(),
+  confirmed_at timestamptz,
+  confirmed_by uuid references public.profiles(id) on delete set null,
+  constraint donation_reports_confirmation_check check (
+    (status = 'reported' and confirmed_at is null and confirmed_by is null)
+    or (status = 'confirmed' and confirmed_at is not null)
+  )
 );
 
 -- Safe requester-facing progress. This table intentionally contains no donor identifiers.
@@ -135,7 +151,8 @@ create table public.request_tracker_events (
   request_id uuid not null references public.blood_requests(id) on delete cascade,
   event_type text not null check (event_type in (
     'request_submitted', 'request_under_review', 'request_activated', 'request_rejected',
-    'request_cancelled', 'request_fulfilled', 'request_information_needed', 'donor_pledged', 'donor_confirmed', 'donor_withdrew'
+    'request_cancelled', 'request_fulfilled', 'request_expired', 'request_information_needed', 'donor_pledged', 'donor_accepted',
+    'donor_confirmed', 'donor_withdrew', 'donor_donation_reported', 'donor_donation_confirmed'
   )),
   request_status public.request_status not null,
   pledge_count integer not null default 0 check (pledge_count >= 0),
@@ -152,11 +169,36 @@ create table public.donor_notifications (
   constraint donor_notifications_donor_request_key unique (donor_id, request_id)
 );
 
+create table public.abuse_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid references public.profiles(id) on delete set null,
+  target_type text not null check (target_type in ('request', 'pledge')),
+  target_id uuid not null,
+  reason text not null check (reason in ('fraud', 'inaccurate', 'harassment', 'other')),
+  status text not null default 'open' check (status in ('open', 'reviewed', 'dismissed')),
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index abuse_reports_status_created_idx on public.abuse_reports(status, created_at);
+create index abuse_reports_target_idx on public.abuse_reports(target_type, target_id);
+create unique index abuse_reports_one_open_per_reporter_target_idx
+  on public.abuse_reports(reporter_id, target_type, target_id)
+  where status = 'open' and reporter_id is not null;
+
+create table public.rate_limit_buckets (
+  key_hash text primary key,
+  window_started_at timestamptz not null,
+  request_count integer not null default 0 check (request_count >= 0),
+  expires_at timestamptz not null
+);
+
 -- 6. Create Indexes
 create index blood_requests_status_idx on public.blood_requests(status);
 create index profiles_location_idx on public.profiles using gist(location);
 create index blood_requests_location_idx on public.blood_requests using gist(hospital_location);
 create index donor_pledges_request_idx on public.donor_pledges(request_id);
+create index donation_reports_status_reported_idx on public.donation_reports(status, reported_at);
 create index request_tracker_events_request_created_idx on public.request_tracker_events(request_id, created_at);
 create index donor_notifications_donor_created_idx on public.donor_notifications(donor_id, created_at desc);
 create index request_verification_events_request_idx on public.request_verification_events(request_id, created_at);
@@ -168,6 +210,9 @@ create index requester_information_responses_request_created_idx on public.reque
 alter table public.profiles enable row level security;
 alter table public.blood_requests enable row level security;
 alter table public.donor_pledges enable row level security;
+alter table public.donation_reports enable row level security;
+alter table public.abuse_reports enable row level security;
+alter table public.rate_limit_buckets enable row level security;
 alter table public.request_tracker_events enable row level security;
 alter table public.donor_notifications enable row level security;
 
@@ -181,6 +226,9 @@ alter table public.request_verification_events enable row level security;
 alter table public.moderation_audit_events enable row level security;
 alter table public.requester_information_responses enable row level security;
 revoke all on public.moderation_audit_events, public.requester_information_responses from anon, authenticated;
+revoke all on public.donation_reports from anon, authenticated;
+revoke all on public.abuse_reports from anon, authenticated;
+revoke all on public.rate_limit_buckets from anon, authenticated;
 
 create or replace function public.prevent_audit_row_mutation()
 returns trigger language plpgsql set search_path = public, pg_temp as $$
@@ -215,8 +263,10 @@ as $$
   from public.blood_requests r
   join public.profiles p on p.role = 'donor'
   where r.id = target_request_id and r.status = 'active'
+    and coalesce(r.required_by, r.created_at + interval '48 hours') > now()
     and r.hospital_location is not null and p.location is not null
     and p.available_to_donate = true
+    and p.availability_expires_at > now()
     and p.blood_group = any(case r.blood_group
       when 'A+' then array['A+', 'A-', 'O+', 'O-']::text[]
       when 'A-' then array['A-', 'O-']::text[]
@@ -236,3 +286,21 @@ $$;
 
 revoke all on function public.find_eligible_donors(uuid) from public, anon, authenticated;
 grant execute on function public.find_eligible_donors(uuid) to service_role;
+
+create or replace function public.expire_blood_requests()
+returns integer
+language plpgsql security definer
+set search_path = public, pg_temp
+as $$
+declare expired_count integer;
+begin
+  update public.blood_requests
+  set status = 'expired', review_state = 'open', updated_at = now()
+  where status in ('pending_verification', 'under_review', 'active')
+    and coalesce(required_by, created_at + interval '48 hours') <= now();
+  get diagnostics expired_count = row_count;
+  return expired_count;
+end;
+$$;
+revoke all on function public.expire_blood_requests() from public, anon, authenticated;
+grant execute on function public.expire_blood_requests() to service_role;

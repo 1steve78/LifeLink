@@ -12,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -30,6 +31,7 @@ export const requestStatus = pgEnum("request_status", [
   "fulfilled",
   "rejected",
   "cancelled",
+  "expired",
 ]);
 export const verificationGate = pgEnum("verification_gate", [
   "basic_validation",
@@ -64,6 +66,7 @@ export const profiles = pgTable(
     location: geographyPoint("location"),
     lastDonationDate: date("last_donation_date"),
     availableToDonate: boolean("available_to_donate").notNull().default(false),
+    availabilityExpiresAt: timestamp("availability_expires_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -81,7 +84,7 @@ export const bloodRequests = pgTable(
   "blood_requests",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    requesterId: uuid("requester_id").notNull().references(() => profiles.id),
+    requesterId: uuid("requester_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
     patientName: text("patient_name"),
     patientReference: text("patient_reference"),
     patientAge: integer("patient_age"),
@@ -113,6 +116,8 @@ export const bloodRequests = pgTable(
       sql`${table.bloodGroup} in ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')`,
     ),
     index("blood_requests_status_idx").on(table.status),
+    index("blood_requests_open_required_by_idx").on(table.requiredBy)
+      .where(sql`${table.status} in ('pending_verification', 'under_review', 'active')`),
     index("blood_requests_location_idx").using("gist", table.hospitalLocation),
   ],
 ).enableRLS();
@@ -121,8 +126,8 @@ export const moderationAuditEvents = pgTable(
   "moderation_audit_events",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    requestId: uuid("request_id").notNull().references(() => bloodRequests.id),
-    moderatorId: uuid("moderator_id").notNull().references(() => profiles.id),
+    requestId: uuid("request_id").notNull().references(() => bloodRequests.id, { onDelete: "cascade" }),
+    moderatorId: uuid("moderator_id").references(() => profiles.id, { onDelete: "set null" }),
     action: text("action").notNull(),
     previousStatus: requestStatus("previous_status").notNull(),
     newStatus: requestStatus("new_status").notNull(),
@@ -140,8 +145,8 @@ export const requesterInformationResponses = pgTable(
   "requester_information_responses",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    requestId: uuid("request_id").notNull().references(() => bloodRequests.id),
-    requesterId: uuid("requester_id").notNull().references(() => profiles.id),
+    requestId: uuid("request_id").notNull().references(() => bloodRequests.id, { onDelete: "cascade" }),
+    requesterId: uuid("requester_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
     message: text("message").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -160,7 +165,7 @@ export const requestVerificationEvents = pgTable(
     status: verificationResultStatus("status").notNull(),
     details: jsonb("details").$type<Record<string, unknown>>().notNull().default({}),
     model: text("model"),
-    performedBy: uuid("performed_by").references(() => profiles.id),
+    performedBy: uuid("performed_by").references(() => profiles.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -174,15 +179,35 @@ export const donorPledges = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     requestId: uuid("request_id").notNull().references(() => bloodRequests.id, { onDelete: "cascade" }),
-    donorId: uuid("donor_id").notNull().references(() => profiles.id),
+    donorId: uuid("donor_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
     status: text("status").notNull().default("pledged"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check("donor_pledges_status_check", sql`${table.status} in ('pledged', 'confirmed', 'completed', 'withdrawn')`),
+    check("donor_pledges_status_check", sql`${table.status} in ('pledged', 'accepted', 'confirmed', 'completed', 'withdrawn')`),
     unique("donor_pledges_request_id_donor_id_key").on(table.requestId, table.donorId),
     index("donor_pledges_request_idx").on(table.requestId),
+  ],
+).enableRLS();
+
+export const donationReports = pgTable(
+  "donation_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pledgeId: uuid("pledge_id").notNull().references(() => donorPledges.id, { onDelete: "cascade" }),
+    unitsDonated: integer("units_donated").notNull(),
+    status: text("status").notNull().default("reported"),
+    reportedAt: timestamp("reported_at", { withTimezone: true }).notNull().defaultNow(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    confirmedBy: uuid("confirmed_by").references(() => profiles.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    check("donation_reports_units_check", sql`${table.unitsDonated} between 1 and 10`),
+    check("donation_reports_status_check", sql`${table.status} in ('reported', 'confirmed')`),
+    check("donation_reports_confirmation_check", sql`(${table.status} = 'reported' and ${table.confirmedAt} is null and ${table.confirmedBy} is null) or (${table.status} = 'confirmed' and ${table.confirmedAt} is not null)`),
+    unique("donation_reports_pledge_id_key").on(table.pledgeId),
+    index("donation_reports_status_idx").on(table.status, table.reportedAt),
   ],
 ).enableRLS();
 
@@ -198,7 +223,7 @@ export const requestTrackerEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
-    check("request_tracker_event_type_check", sql`${table.eventType} in ('request_submitted', 'request_under_review', 'request_activated', 'request_rejected', 'request_cancelled', 'request_fulfilled', 'request_information_needed', 'donor_pledged', 'donor_confirmed', 'donor_withdrew')`),
+      check("request_tracker_event_type_check", sql`${table.eventType} in ('request_submitted', 'request_under_review', 'request_activated', 'request_rejected', 'request_cancelled', 'request_fulfilled', 'request_expired', 'request_information_needed', 'donor_pledged', 'donor_accepted', 'donor_confirmed', 'donor_withdrew', 'donor_donation_reported', 'donor_donation_confirmed')`),
     check("request_tracker_counts_check", sql`${table.pledgeCount} >= 0 and ${table.confirmedCount} >= 0`),
     index("request_tracker_events_request_created_idx").on(table.requestId, table.createdAt),
   ],
@@ -218,3 +243,34 @@ export const donorNotifications = pgTable(
     index("donor_notifications_donor_created_idx").on(table.donorId, table.createdAt),
   ],
 ).enableRLS();
+
+export const abuseReports = pgTable(
+  "abuse_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reporterId: uuid("reporter_id").references(() => profiles.id, { onDelete: "set null" }),
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    reason: text("reason").notNull(),
+    status: text("status").notNull().default("open"),
+    reviewedBy: uuid("reviewed_by").references(() => profiles.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("abuse_reports_target_type_check", sql`${table.targetType} in ('request', 'pledge')`),
+    check("abuse_reports_reason_check", sql`${table.reason} in ('fraud', 'inaccurate', 'harassment', 'other')`),
+    check("abuse_reports_status_check", sql`${table.status} in ('open', 'reviewed', 'dismissed')`),
+    index("abuse_reports_status_created_idx").on(table.status, table.createdAt),
+    index("abuse_reports_target_idx").on(table.targetType, table.targetId),
+    uniqueIndex("abuse_reports_one_open_per_reporter_target_idx").on(table.reporterId, table.targetType, table.targetId)
+      .where(sql`${table.status} = 'open' and ${table.reporterId} is not null`),
+  ],
+).enableRLS();
+
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  keyHash: text("key_hash").primaryKey(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull(),
+  requestCount: integer("request_count").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}).enableRLS();
