@@ -49,6 +49,7 @@ describe("Profile API Route (/api/profile)", () => {
         id: "11111111-2222-3333-4444-555555555555",
         email: "donor@example.com",
         created_at: "2026-01-01T00:00:00Z",
+        user_metadata: { role: "requester" },
       };
       mockGetUser.mockResolvedValueOnce({
         data: { user: mockUser },
@@ -81,8 +82,45 @@ describe("Profile API Route (/api/profile)", () => {
 
       expect(res.status).toBe(200);
       expect(body.user.email).toBe("donor@example.com");
+      expect(body.user.role).toBe("donor");
       expect(body.profile.fullName).toBe("Aarav Sharma");
       expect(body.isComplete).toBe(true);
+    });
+
+    it("uses the signup role when the user has no profile yet", async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: {
+          user: {
+            id: "22222222-3333-4444-5555-666666666666",
+            email: "newuser@example.com",
+            created_at: "2026-01-01T00:00:00Z",
+            user_metadata: {
+              role: "requester",
+              full_name: "New Requester",
+              phone: "+91 9876543210",
+              blood_group: "O+",
+            },
+          },
+        },
+        error: null,
+      });
+      mockSelect.mockReturnValueOnce({
+        from: () => ({
+          where: () => ({
+            limit: () => Promise.resolve([]),
+          }),
+        }),
+      });
+
+      const { GET } = await import("../app/api/profile/route");
+      const res = await GET();
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.user.role).toBe("requester");
+      expect(body.user.fullName).toBe("New Requester");
+      expect(body.user.phone).toBe("+91 9876543210");
+      expect(body.user.bloodGroup).toBe("O+");
     });
 
     it("returns isComplete: false if donor has not provided locality or completedAt", async () => {

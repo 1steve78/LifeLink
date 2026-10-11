@@ -34,12 +34,13 @@ export default function ProfileSetupPage() {
   const [initializing, setInitializing] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
 
   // User auth info
   const [userEmail, setUserEmail] = useState<string>("");
 
   // Form fields
-  const [accountType, setAccountType] = useState<AccountTypeOption>("donor");
+  const [accountType, setAccountType] = useState<AccountTypeOption>("requester");
   const [fullName, setFullName] = useState("");
   const [bloodGroup, setBloodGroup] = useState<BloodGroupOption>("unknown");
   const [phone, setPhone] = useState("");
@@ -75,12 +76,17 @@ export default function ProfileSetupPage() {
           setUserEmail(data.user.email);
         }
 
+        const role = data.profile?.role ?? data.user?.role;
+        if (role === "moderator") {
+          setIsModerator(true);
+          setAccountType("requester");
+        } else if (role === "donor" || role === "requester") {
+          setAccountType(role);
+        }
+
         if (data.profile) {
           const p = data.profile;
           if (p.fullName) setFullName(p.fullName);
-          if (p.role === "donor" || p.role === "requester") {
-            setAccountType(p.role);
-          }
           if (p.bloodGroup) {
             setBloodGroup(p.bloodGroup as BloodGroupOption);
           }
@@ -102,10 +108,17 @@ export default function ProfileSetupPage() {
           } else if (p.role === "donor" && p.completedAt) {
             setIsFirstTimeDonor(true);
           }
-        } else if (data.user?.email) {
-          // Pre-populate name guess from email prefix if blank
-          const nameGuess = data.user.email.split("@")[0].replace(/[._]/g, " ");
-          setFullName(nameGuess.charAt(0).toUpperCase() + nameGuess.slice(1));
+        } else {
+          if (data.user?.fullName) {
+            setFullName(data.user.fullName);
+          } else if (data.user?.email) {
+            const nameGuess = data.user.email.split("@")[0].replace(/[._]/g, " ");
+            setFullName(nameGuess.charAt(0).toUpperCase() + nameGuess.slice(1));
+          }
+          if (data.user?.phone) setPhone(data.user.phone);
+          if (data.user?.bloodGroup && BLOOD_GROUPS.includes(data.user.bloodGroup)) {
+            setBloodGroup(data.user.bloodGroup);
+          }
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
@@ -217,14 +230,17 @@ export default function ProfileSetupPage() {
         return;
       }
 
+      const savedRole = result.profile?.role;
       setSuccessMessage(
-        accountType === "donor"
-          ? "🎉 Profile complete! If available, you will be listed for matching for 72 hours."
-          : "🎉 Profile complete! You are ready to create and manage blood requests."
+        savedRole === "moderator"
+          ? "🎉 Profile complete! Your moderator dashboard is ready."
+          : savedRole === "donor"
+            ? "🎉 Profile complete! If available, you will be listed for matching for 72 hours."
+            : "🎉 Profile complete! You are ready to create and manage blood requests."
       );
 
       // Smooth transition to homepage / dashboard
-      const destination = result.profile?.role === "donor" || accountType === "donor"
+      const destination = result.profile?.role === "donor"
         ? "/donor/pulse"
         : result.profile?.role === "moderator"
           ? "/moderator"
@@ -336,7 +352,15 @@ export default function ProfileSetupPage() {
           onSubmit={handleSubmit}
           className="bg-white rounded-3xl p-6 sm:p-8 border border-neutral-200/80 shadow-xl shadow-neutral-200/40 space-y-8"
         >
-          {/* 1. Account Type Selector */}
+          {/* 1. Account Type */}
+          {isModerator ? (
+            <div className="space-y-2 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+              <h2 className="font-bold text-blue-900">Moderator account</h2>
+              <p className="text-sm text-blue-800">
+                Your moderator role is managed by LifeLink. Complete your basic profile to continue.
+              </p>
+            </div>
+          ) : (
           <div className="space-y-3" id="field-accountType">
             <label className="block text-sm font-bold text-neutral-800">
               1. Choose your account type <span className="text-red-500">*</span>
@@ -424,6 +448,7 @@ export default function ProfileSetupPage() {
               </p>
             )}
           </div>
+          )}
 
           <hr className="border-neutral-100" />
 

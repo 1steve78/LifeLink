@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { profiles } from "@/lib/db/schema";
 import { createClient } from "@/lib/supabase/server";
-import { profileOnboardingSchema } from "@/lib/validations/profile";
+import { BLOOD_GROUPS, profileOnboardingSchema } from "@/lib/validations/profile";
 
 // GET /api/profile
 // Fetches the profile and onboarding completion status for the authenticated user
@@ -34,12 +34,27 @@ export async function GET() {
         userProfile.fullName &&
         (userProfile.role !== "donor" || userProfile.locality)
     );
+    const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const metadataRole =
+      metadata.role === "donor" || metadata.role === "requester"
+        ? metadata.role
+        : null;
+    const metadataBloodGroup =
+      BLOOD_GROUPS.find((bloodGroup) => bloodGroup === metadata.blood_group) ?? null;
 
     return NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
         createdAt: user.created_at,
+        role: userProfile?.role ?? metadataRole,
+        fullName:
+          userProfile?.fullName ??
+          (typeof metadata.full_name === "string" ? metadata.full_name : null),
+        phone:
+          userProfile?.phone ??
+          (typeof metadata.phone === "string" ? metadata.phone : null),
+        bloodGroup: userProfile?.bloodGroup ?? metadataBloodGroup,
       },
       profile: userProfile ?? null,
       isComplete,
