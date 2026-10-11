@@ -1,133 +1,173 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
-import { Plus, X, ArrowRight } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowRight, CheckCircle2, HeartHandshake, MapPin, ShieldCheck } from "lucide-react";
 
-interface Step {
-  id: string;
-  num: string;
-  title: string;
-  description: string;
+gsap.registerPlugin(ScrollTrigger);
+
+interface HowItWorksSectionProps {
+  onOpenRequestModal?: () => void;
+  onOpenDonorModal?: () => void;
 }
 
-export const HowItWorksSection: React.FC = () => {
-  const [activeStep, setActiveStep] = useState<string>("01");
+const requesterSteps = [
+  {
+    title: "Share the need",
+    description: "Enter the blood group, units, hospital and required timing, with the supporting details for review.",
+    icon: HeartHandshake,
+  },
+  {
+    title: "Get a verified search",
+    description: "A request is reviewed before it is shared with compatible donors nearby, helping people focus on genuine needs.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Follow progress",
+    description: "See donor pledges and donation reports in one place. Confirmed donations update the request’s fulfillment progress.",
+    icon: CheckCircle2,
+  },
+];
 
-  const steps: Step[] = [
-    {
-      id: "01",
-      num: "01",
-      title: "Create a Request",
-      description:
-        "Share the essential details so verified donors in your area can be notified quickly.",
-    },
-    {
-      id: "02",
-      num: "02",
-      title: "Get Verified",
-      description:
-        "Our team and AI screening help ensure requests are genuine and safe.",
-    },
-    {
-      id: "03",
-      num: "03",
-      title: "Connect with Donors",
-      description:
-        "Nearby verified donors can view your request and pledge to help.",
-    },
-    {
-      id: "04",
-      num: "04",
-      title: "Track & Get Support",
-      description:
-        "Stay updated in real time, from donor pledges to final confirmation.",
-    },
-  ];
+const donorSteps = [
+  {
+    title: "Set your availability",
+    description: "Create a donor profile and turn availability on when you are ready to be considered for a request.",
+    icon: CheckCircle2,
+  },
+  {
+    title: "See relevant requests",
+    description: "LifeLink uses blood-group compatibility, approximate distance and availability to surface requests that may fit.",
+    icon: MapPin,
+  },
+  {
+    title: "Choose how to help",
+    description: "Review the request and pledge if you can help. The requester can track updates as donations are reported and confirmed.",
+    icon: HeartHandshake,
+  },
+];
+
+export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
+  onOpenRequestModal,
+  onOpenDonorModal,
+}) => {
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".how-it-works-header",
+        { opacity: 0, y: 32 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 75%",
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".how-it-works-card",
+        { opacity: 0, y: 36 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.75,
+          stagger: 0.12,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 70%",
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".how-it-works-step",
+        { opacity: 0, x: -18 },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.55,
+          stagger: 0.09,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 65%",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <section id="how-it-works" className="relative py-12 sm:py-20 bg-[#07050e]">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-[2rem] border border-white/10 shadow-[0_40px_120px_rgba(0,0,0,0.35)] min-h-[580px] lg:min-h-[640px]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(255,104,104,0.35),transparent_28%),radial-gradient(circle_at_75%_30%,rgba(169,85,247,0.25),transparent_24%),radial-gradient(circle_at_55%_100%,rgba(249,115,22,0.3),transparent_30%),linear-gradient(120deg,#07050e_0%,#110d12_35%,#1a1016_100%)]" />
+    <section ref={sectionRef} id="how-it-works" className="relative overflow-hidden border-t border-neutral-100 bg-[#FBF9F8] py-20 sm:py-28">
+      <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-rose-100/50 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-amber-100/40 blur-3xl" />
 
-          <Image
-            src="/images/how-it-works-glitch.jpg"
-            alt="How LifeLink Works Cinematic Background"
-            fill
-            sizes="100vw"
-            className="object-cover object-center opacity-55 mix-blend-screen"
-          />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="how-it-works-header mx-auto mb-12 max-w-2xl text-center sm:mb-14">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-rose-100 bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#C81E1E]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#E23B42]" />
+            A clearer path to help
+          </p>
+          <h2 className="font-serif text-3xl font-normal tracking-tight text-[#111827] sm:text-4xl lg:text-5xl">
+            One network, <span className="italic text-[#E23B42]">two ways to help</span>
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-600 sm:text-base">
+            LifeLink guides requesters from a verified need to clear progress, while helping donors find requests they may be able to support.
+          </p>
+        </div>
 
-          <div className="absolute inset-0 bg-gradient-to-r from-[#05050a]/90 via-[#181018]/60 to-[#09090d]/85" />
-
-          <div className="relative z-10 grid w-full grid-cols-1 gap-10 p-8 sm:p-12 lg:grid-cols-12 lg:gap-12 lg:p-16 lg:items-center">
-            <div className="lg:col-span-5 text-white">
-              <h2 className="font-serif text-4xl sm:text-5xl lg:text-[5rem] lg:leading-[0.94] font-normal tracking-[-0.05em]">
-                How <span className="italic text-[#E23B42]">LifeLink</span>
-                <br />
-                Works
-              </h2>
-
-              <p className="mt-6 max-w-sm text-sm leading-relaxed text-white/75 sm:text-base">
-                From creating a request to connecting with verified donors, LifeLink makes the process simple,
-                transparent and community-driven.
-              </p>
-
-              <div className="mt-8">
-                <a
-                  href="#services"
-                  className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-neutral-900 shadow-[0_10px_25px_rgba(255,255,255,0.15)] transition-all hover:bg-neutral-100 active:scale-95"
-                >
-                  <span>Learn More</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </a>
+        <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+          {[
+            { title: "I need blood", audience: "For requesters", steps: requesterSteps, action: onOpenRequestModal, actionLabel: "Create a request" },
+            { title: "I can donate", audience: "For donors", steps: donorSteps, action: onOpenDonorModal, actionLabel: "Find requests" },
+          ].map((journey) => (
+            <article key={journey.title} className="how-it-works-card rounded-3xl border border-neutral-200/80 bg-white/85 p-6 shadow-sm backdrop-blur sm:p-8">
+              <div className="mb-6 flex items-end justify-between gap-3 border-b border-neutral-100 pb-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">{journey.audience}</p>
+                  <h3 className="mt-1 font-serif text-2xl text-neutral-900 sm:text-3xl">{journey.title}</h3>
+                </div>
+                <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-[#C81E1E]">3 steps</span>
               </div>
-            </div>
 
-            <div className="lg:col-span-7 flex flex-col gap-3.5">
-              {steps.map((step) => {
-                const isOpen = activeStep === step.id;
-
-                return (
-                  <div
-                    key={step.id}
-                    onClick={() => setActiveStep(isOpen ? "" : step.id)}
-                    className={`cursor-pointer rounded-[1.4rem] border backdrop-blur-md transition-all duration-300 ${
-                      isOpen
-                        ? "border-white/30 bg-[linear-gradient(135deg,rgba(255,255,255,0.18),rgba(255,255,255,0.08))] shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
-                        : "border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:bg-[linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))]"
-                    } p-5 sm:p-6`}
-                  >
-                    <div className="flex items-center justify-between text-white">
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-semibold tracking-[0.18em] text-[#F6C1C9]">
-                          {step.num}
-                        </span>
-                        <h3 className="text-lg font-semibold tracking-[-0.04em] text-white sm:text-xl">
-                          {step.title}
-                        </h3>
+              <ol className="space-y-5">
+                {journey.steps.map((step, index) => {
+                  const Icon = step.icon;
+                  return (
+                    <li key={step.title} className="how-it-works-step relative flex gap-4">
+                      {index < journey.steps.length - 1 && <span aria-hidden="true" className="absolute bottom-[-1.4rem] left-5 top-11 w-px bg-rose-100" />}
+                      <span className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rose-100 bg-rose-50 text-[#E23B42]">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <div className="pt-0.5">
+                        <p className="text-sm font-semibold text-neutral-900">{String(index + 1).padStart(2, "0")} · {step.title}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-neutral-600">{step.description}</p>
                       </div>
+                    </li>
+                  );
+                })}
+              </ol>
 
-                      <button
-                        type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white/80 transition-all hover:bg-white/10 hover:text-white"
-                        aria-label={isOpen ? "Collapse step" : "Expand step"}
-                      >
-                        {isOpen ? <X className="h-4 w-4 stroke-[2.2]" /> : <Plus className="h-4 w-4 stroke-[2.2]" />}
-                      </button>
-                    </div>
-
-                    {isOpen && (
-                      <div className="mt-3 pl-9 text-sm leading-relaxed text-white/80 sm:pl-10 sm:text-[0.95rem]">
-                        {step.description}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+              {journey.action && (
+                <button type="button" onClick={journey.action} className="group mt-7 inline-flex items-center gap-2 rounded-full bg-[#18181B] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#27272A]">
+                  {journey.actionLabel}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </button>
+              )}
+            </article>
+          ))}
         </div>
       </div>
     </section>

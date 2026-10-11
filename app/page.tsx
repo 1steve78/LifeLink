@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 // HeroSection is above-the-fold — eagerly imported for fastest LCP
 import { HeroSection } from "@/components/landing/HeroSection";
 
@@ -35,25 +34,8 @@ const FindDonorModal = dynamic(
 );
 
 export default function LandingPage() {
-  const router = useRouter();
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isDonorModalOpen, setIsDonorModalOpen] = useState(false);
-
-  // Redirect logged-in users straight to their role dashboard
-  useEffect(() => {
-    fetch("/api/profile", { cache: "no-store" })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (!data?.profile?.role) return;
-        const role = data.profile.role as string;
-        const destination =
-          role === "donor" ? "/donor/pulse" :
-          role === "moderator" ? "/moderator" :
-          "/requests";
-        router.replace(destination);
-      })
-      .catch(() => { /* not logged in — stay on landing */ });
-  }, [router]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -73,8 +55,11 @@ export default function LandingPage() {
           onOpenDonorModal={() => setIsDonorModalOpen(true)}
         />
 
-        {/* Section 2: "How LifeLink Works" with Cinematic Glitch Background & 4 Glass Steps (Image 2 Bottom & Image 3) */}
-        <HowItWorksSection />
+        {/* Section 2: "How LifeLink Works" */}
+        <HowItWorksSection
+          onOpenRequestModal={() => setIsRequestModalOpen(true)}
+          onOpenDonorModal={() => setIsDonorModalOpen(true)}
+        />
 
         {/* Section 4: "OUR SERVICES / How LifeLink Makes an Impact" (Image 4) */}
         <ImpactSection

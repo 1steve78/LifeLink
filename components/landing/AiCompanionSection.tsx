@@ -1,249 +1,205 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
-import { ArrowLeft, ArrowRight, Bot, MapPin, Upload, Bell, CheckCircle2 } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import {
+  ArrowRight,
+  BellRing,
+  Heart,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export const AiCompanionSection: React.FC = () => {
-  const [activeSlide, setActiveSlide] = useState(1); // 0 = Find Nearby, 1 = Instant Guidance, 2 = Real-time Updates
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
 
-  const slides = [
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".user-flow-heading",
+        { opacity: 0, y: 36 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 75%",
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".user-flow-card",
+        { opacity: 0, y: 42 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.75,
+          stagger: 0.12,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 72%",
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".user-flow-highlight",
+        { opacity: 0, y: 24 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          stagger: 0.12,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 68%",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  const steps = [
     {
-      id: 0,
-      tag: "Find Nearby Support",
-      bgImage: "/images/companion-card-1.jpg",
-      subtext: "Navigate directly to nearby accredited blood donation centers and camps with turn-by-turn routing.",
-      widget: (
-        <div className="bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-white shadow-2xl w-full max-w-[260px]">
-          {/* Stylized Map View */}
-          <div className="relative h-28 rounded-xl bg-neutral-800/80 border border-neutral-700/60 overflow-hidden p-2 flex items-center justify-center">
-            {/* SVG Path Route */}
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 100">
-              <path
-                d="M 30 30 Q 80 50, 110 75 T 160 80"
-                fill="none"
-                stroke="#E23B42"
-                strokeWidth="2.5"
-                strokeDasharray="4 4"
-              />
-            </svg>
-
-            {/* Starting Pin */}
-            <div className="absolute top-4 left-6 flex items-center justify-center">
-              <div className="w-7 h-7 rounded-full bg-white text-neutral-900 flex items-center justify-center shadow-lg">
-                <MapPin className="w-4 h-4 text-[#E23B42] fill-[#E23B42]" />
-              </div>
-            </div>
-
-            {/* Destination Dot */}
-            <div className="absolute bottom-3 right-8 flex items-center justify-center">
-              <div className="w-4 h-4 rounded-full bg-[#E23B42] border-2 border-white shadow-md animate-ping absolute" />
-              <div className="w-3.5 h-3.5 rounded-full bg-[#E23B42] border-2 border-white shadow-md relative" />
-            </div>
-
-            {/* Floating Distance Badge */}
-            <div className="absolute top-8 right-6 bg-neutral-900/90 text-[11px] font-semibold text-white px-2.5 py-1 rounded-full border border-white/10 shadow-md">
-              2.4 km away
-            </div>
-          </div>
-        </div>
-      ),
+      title: "Create a request",
+      subtitle: "REQUEST",
+      description:
+        "Share the patient details, urgency, and location so the right help can be surfaced fast.",
+      accent: "bg-[#F9E7E7]",
+      icon: Sparkles,
+      step: "01",
     },
     {
-      id: 1,
-      tag: "Instant Guidance",
-      bgImage: "/images/companion-card-2.jpg",
-      subtext: "Get step-by-step guidance for donation processes, eligibility, and nearby facilities.",
-      widget: (
-        <div className="bg-neutral-900/85 backdrop-blur-xl border border-white/15 rounded-2xl p-4 sm:p-5 text-white shadow-2xl w-full max-w-[320px]">
-          {/* Header */}
-          <div className="flex items-center gap-2.5 mb-3.5">
-            <div className="w-7 h-7 rounded-full bg-rose-500/20 text-rose-300 flex items-center justify-center border border-rose-500/30">
-              <Bot className="w-4 h-4" />
-            </div>
-            <span className="text-xs font-bold text-white tracking-wide">LifeLink AI</span>
-          </div>
-
-          {/* User message */}
-          <div className="flex justify-end mb-2.5">
-            <div className="bg-white/15 backdrop-blur-md rounded-2xl rounded-tr-xs px-3.5 py-2 text-[11px] text-white border border-white/10 max-w-[210px]">
-              Am I eligible to donate?
-            </div>
-          </div>
-
-          {/* AI Response message */}
-          <div className="flex justify-start">
-            <div className="bg-neutral-800/80 backdrop-blur-md rounded-2xl rounded-tl-xs p-3 text-[11px] text-neutral-200 border border-white/10 leading-relaxed max-w-[260px]">
-              Based on the information you provided, you look eligible to donate. Make sure you are well-rested and had a meal before donating.
-            </div>
-          </div>
-        </div>
-      ),
+      title: "Match with donors",
+      subtitle: "MATCH",
+      description:
+        "LifeLink filters verified nearby donors and sends real-time alerts to the best possible matches.",
+      accent: "bg-[#F0EAFB]",
+      icon: Users,
+      step: "02",
     },
     {
-      id: 2,
-      tag: "Real-time Updates",
-      bgImage: "/images/companion-card-3.jpg",
-      subtext: "Live milestone tracking from request verification to donor arrival and unit cross-matching.",
-      widget: (
-        <div className="bg-neutral-900/85 backdrop-blur-xl border border-white/15 rounded-2xl p-4 sm:p-5 text-white shadow-2xl w-full max-w-[280px]">
-          <div className="space-y-3.5 relative">
-            {/* Connecting Vertical Line */}
-            <div className="absolute left-3.5 top-3 bottom-3 w-0.5 bg-neutral-700/80" />
-
-            {/* Step 1 */}
-            <div className="flex items-center gap-3 relative">
-              <div className="w-7 h-7 rounded-full bg-sky-500 text-white flex items-center justify-center shrink-0 shadow-md">
-                <Upload className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-white">Request Submitted</div>
-                <div className="text-[10px] text-neutral-400">2 min ago</div>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div className="flex items-center gap-3 relative">
-              <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
-                <Bell className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-white">Donors Notified</div>
-                <div className="text-[10px] text-neutral-400">8 min ago</div>
-              </div>
-            </div>
-
-            {/* Step 3 */}
-            <div className="flex items-center gap-3 relative">
-              <div className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-white">Pledge Received</div>
-                <div className="text-[10px] text-neutral-400">12 min ago</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
+      title: "Confirm and travel",
+      subtitle: "TRAVEL",
+      description:
+        "Donors receive clear instructions, timing, and support while the patient stays informed throughout.",
+      accent: "bg-[#E9F5F1]",
+      icon: MapPin,
+      step: "03",
+    },
+    {
+      title: "Receive care",
+      subtitle: "CARE",
+      description:
+        "Once the donation is complete, both sides get updates and follow-up care coordination is tracked.",
+      accent: "bg-[#FDEEEA]",
+      icon: Heart,
+      step: "04",
     },
   ];
 
-  const prevSlide = () => {
-    setActiveSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
-
-  const nextSlide = () => {
-    setActiveSlide((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
+  const highlights = [
+    {
+      icon: BellRing,
+      text: "Live alerts and updates at every stage",
+      tint: "bg-[#F9E5E5] text-[#E23B42]",
+    },
+    {
+      icon: ShieldCheck,
+      text: "Verified matches and transparent follow-through",
+      tint: "bg-[#E5F7ED] text-[#1FB97A]",
+    },
+  ];
 
   return (
-    <section id="companion" className="py-20 sm:py-28 bg-[#F4F6F9]/40 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-14">
-          <p className="text-xs font-semibold tracking-widest text-neutral-400 uppercase">
-            AI-POWERED SUPPORT
+    <section ref={sectionRef} id="user-flow" className="relative overflow-hidden bg-[#F3F0EE] py-20 sm:py-28">
+      <div className="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
+        <div className="user-flow-heading mx-auto mb-14 max-w-[760px] text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.42em] text-[#495567]">
+            USER FLOW
           </p>
-          <h2 className="mt-2 font-serif text-3xl sm:text-4xl lg:text-5xl font-normal text-[#111827] tracking-tight">
-            Meet Your LifeLink
-            <br />
-            <span className="italic text-[#E23B42] font-normal">Support Companion</span>
+          <h2 className="mt-5 font-serif text-[3rem] font-normal leading-[0.95] tracking-[-0.05em] text-[#1B2533] sm:text-[4rem] lg:text-[5.2rem]">
+            From request to
+            <span className="mt-2 block italic text-[#E23B42]">support in four steps</span>
           </h2>
-          <p className="mt-4 text-sm sm:text-base text-neutral-600 leading-relaxed">
-            Get real-time guidance, information and support throughout your donation
-            journey — available 24/7.
+          <p className="mx-auto mt-5 max-w-[680px] text-[15px] leading-7 text-[#586274]">
+            Every moment of the donation journey is designed to make urgent help feel clear, fast, and human.
           </p>
         </div>
 
-        {/* Carousel Viewport */}
-        <div className="relative">
-          {/* Desktop/Tablet 3-Card Carousel Display */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-stretch">
-            {slides.map((slide, index) => {
-              const isCenter = index === activeSlide;
+        <div className="grid gap-6 lg:grid-cols-4">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+
+            return (
+              <div
+                key={step.title}
+                ref={(el) => {
+                  cardRefs.current[index] = el;
+                }}
+                className="user-flow-card group rounded-[30px] border border-[#E7E0DD] bg-white/60 p-4 shadow-[0_10px_30px_rgba(17,24,39,0.04)] backdrop-blur-sm transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(17,24,39,0.08)] sm:p-5"
+              >
+                <div className={`mb-6 flex h-16 w-16 items-center justify-center rounded-[18px] ${step.accent}`}>
+                  <Icon className="h-7 w-7 text-[#1B2533]" strokeWidth={2.2} />
+                </div>
+
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#5C6470]">
+                    {step.subtitle}
+                  </span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E4E2E2] bg-[#F9FAFB] text-[10px] font-medium text-[#4A5565] shadow-sm">
+                    {step.step}
+                  </span>
+                </div>
+
+                <h3 className="text-[1.05rem] font-semibold leading-6 text-[#1B2533] sm:text-[1.2rem]">
+                  {step.title}
+                </h3>
+
+                <p className="mt-3 text-[15px] leading-6 text-[#586274]">{step.description}</p>
+
+                <div className="mt-7 flex items-center justify-end">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#F2D7D7] bg-[#FFF3F3] text-[#E23B42] transition group-hover:translate-x-1">
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-10 rounded-[26px] border border-[#E2DCD7] bg-white/65 px-4 py-4 shadow-[0_14px_30px_rgba(17,24,39,0.04)] backdrop-blur-sm sm:px-8">
+          <div className="grid gap-4 md:grid-cols-2">
+            {highlights.map((item) => {
+              const Icon = item.icon;
 
               return (
                 <div
-                  key={slide.id}
-                  onClick={() => setActiveSlide(index)}
-                  className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 shadow-xl ${
-                    isCenter
-                      ? "md:col-span-6 ring-2 ring-neutral-900/10 scale-100 z-20 min-h-[460px] sm:min-h-[500px]"
-                      : "md:col-span-3 opacity-75 hover:opacity-100 scale-95 z-10 min-h-[380px] sm:min-h-[440px]"
-                  }`}
+                  key={item.text}
+                  className="user-flow-highlight flex items-center gap-4 rounded-[18px] border border-[#F0ECE7] bg-[#F7F5F3] px-4 py-3 text-left"
                 >
-                  {/* Photo Background */}
-                  <Image
-                    src={slide.bgImage}
-                    alt={slide.tag}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover object-center"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/85 via-neutral-900/30 to-black/20 pointer-events-none" />
-
-                  {/* Top Floating Tag Pill */}
-                  <div className="absolute top-5 left-5 z-20">
-                    <span className="bg-white/20 backdrop-blur-md text-white text-xs font-medium px-4 py-1.5 rounded-full border border-white/20 shadow-sm">
-                      {slide.tag}
-                    </span>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full ${item.tint}`}>
+                    <Icon className="h-4 w-4" strokeWidth={2.2} />
                   </div>
-
-                  {/* Center/Bottom Widget Overlay */}
-                  <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end z-20">
-                    {/* Widget Component */}
-                    <div className="mb-4 flex justify-center sm:justify-end">
-                      {slide.widget}
-                    </div>
-
-                    {/* Explanatory Caption (Shown prominently on center active slide) */}
-                    {isCenter && (
-                      <p className="text-xs sm:text-sm text-neutral-200/90 leading-relaxed max-w-sm drop-shadow-sm animate-in fade-in duration-300">
-                        {slide.subtext}
-                      </p>
-                    )}
-                  </div>
+                  <p className="text-[15px] font-medium leading-6 text-[#1E2A38]">{item.text}</p>
                 </div>
               );
             })}
-          </div>
-
-          {/* Carousel Controls Bottom Row */}
-          <div className="mt-10 flex items-center justify-center gap-4">
-            {/* Prev Button */}
-            <button
-              onClick={prevSlide}
-              className="w-10 h-10 rounded-full bg-white border border-neutral-200/80 shadow-xs flex items-center justify-center text-neutral-700 hover:bg-neutral-50 active:scale-95 transition-all"
-              aria-label="Previous slide"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-
-            {/* Indicators */}
-            <div className="flex items-center gap-1.5 px-2">
-              {slides.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveSlide(idx)}
-                  className={`transition-all duration-300 rounded-full ${
-                    idx === activeSlide
-                      ? "w-6 h-2 bg-[#18181B]"
-                      : "w-2 h-2 bg-neutral-300 hover:bg-neutral-400"
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </div>
-
-            {/* Next Button */}
-            <button
-              onClick={nextSlide}
-              className="w-10 h-10 rounded-full bg-white border border-neutral-200/80 shadow-xs flex items-center justify-center text-neutral-700 hover:bg-neutral-50 active:scale-95 transition-all"
-              aria-label="Next slide"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>

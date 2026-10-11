@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Droplet, MapPin, Building2 } from "lucide-react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface RequestItem {
   id: string;
@@ -48,7 +52,47 @@ const mockRequests: RequestItem[] = [
 ];
 
 export const LiveRequestsFeed: React.FC = () => {
+  const sectionRef = useRef<HTMLElement | null>(null);
   const [selectedBlood, setSelectedBlood] = useState<string>("All");
+
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".live-requests-header",
+        { opacity: 0, y: 28 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 75%",
+          },
+        }
+      );
+
+      gsap.fromTo(
+        ".live-request-card",
+        { opacity: 0, y: 28 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          stagger: 0.1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 72%",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
 
   const bloodFilters = ["All", "O-", "O+", "A+", "A-", "B+", "B-", "AB+"];
 
@@ -58,10 +102,9 @@ export const LiveRequestsFeed: React.FC = () => {
       : mockRequests.filter((r) => r.bloodGroup === selectedBlood);
 
   return (
-    <section className="py-20 sm:py-24 bg-white border-t border-neutral-100">
+    <section ref={sectionRef} className="py-20 sm:py-24 bg-white border-t border-neutral-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="live-requests-header flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-[#C81E1E] text-xs font-semibold mb-3">
               <span className="w-2 h-2 rounded-full bg-[#C81E1E] animate-ping" />
@@ -75,7 +118,6 @@ export const LiveRequestsFeed: React.FC = () => {
             </p>
           </div>
 
-          {/* Blood Filter Pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
             {bloodFilters.map((group) => (
               <button
@@ -93,16 +135,14 @@ export const LiveRequestsFeed: React.FC = () => {
           </div>
         </div>
 
-        {/* Requests Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredRequests.map((req) => {
             return (
               <div
                 key={req.id}
-                className="bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group"
+                className="live-request-card bg-white rounded-3xl p-5 border border-neutral-200/80 shadow-xs hover:shadow-xl hover:border-red-200 transition-all duration-300 flex flex-col justify-between group"
               >
                 <div>
-                  {/* Card Header: Blood Group Pill & Urgency */}
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <div className="flex items-center gap-1.5 bg-red-50 text-[#C81E1E] border border-red-200/70 rounded-full px-3 py-1 font-bold text-sm">
                       <Droplet className="w-3.5 h-3.5 fill-[#C81E1E]" />
@@ -123,7 +163,6 @@ export const LiveRequestsFeed: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Public request preview: no patient or requester identity. */}
                   <h3 className="font-bold text-neutral-900 text-base leading-snug group-hover:text-[#C81E1E] transition-colors">
                     Blood request
                   </h3>
@@ -133,7 +172,6 @@ export const LiveRequestsFeed: React.FC = () => {
                     <span className="truncate">{req.hospital}</span>
                   </div>
 
-                  {/* Area only; never show an individual donor distance. */}
                   <div className="mt-2.5 flex items-center justify-between text-xs text-neutral-500">
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-neutral-400" />

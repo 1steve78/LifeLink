@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
 interface HeroSectionProps {
@@ -14,7 +15,37 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenDonorModal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const router = useRouter();
   const gradientCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  const handleJoinNow = async () => {
+    if (joining) return;
+    setJoining(true);
+
+    try {
+      const response = await fetch("/api/profile", { cache: "no-store" });
+      if (!response.ok) {
+        router.push("/login");
+        return;
+      }
+
+      const data = await response.json();
+      const role = data?.profile?.role;
+      const destination = role === "donor"
+        ? "/donor/pulse"
+        : role === "moderator"
+          ? "/moderator"
+          : role === "requester"
+            ? "/requests"
+            : "/profile/setup";
+      router.push(destination);
+    } catch {
+      router.push("/login");
+    } finally {
+      setJoining(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -136,12 +167,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Right Action: 'Join Now' Button */}
             <div className="flex items-center gap-3">
-              <Link
-                href="/login"
+              <button
+                type="button"
+                onClick={handleJoinNow}
+                disabled={joining}
                 className="rounded-full bg-white text-neutral-950 font-semibold text-xs sm:text-sm px-5 py-2 sm:px-6 sm:py-2.5 hover:bg-neutral-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-lg shadow-black/20"
               >
-                Join Now
-              </Link>
+                {joining ? "Loading…" : "Join Now"}
+              </button>
 
               {/* Mobile Menu Toggle */}
               <button
