@@ -56,7 +56,7 @@ export default function AuthPage() {
         const profileRes = await fetch("/api/profile", { cache: "no-store" });
         const profileData = profileRes.ok ? await profileRes.json() : null;
         const role = profileData?.profile?.role as string | undefined;
-        if (!profileData?.profile?.completedAt && !role) {
+        if (!profileData?.isComplete) {
           router.replace("/profile/setup");
         } else {
           router.replace(
@@ -162,10 +162,28 @@ export default function AuthPage() {
             return;
           }
         }
-        setSuccessMsg(
-          "Account created! Redirecting to complete your profile..."
-        );
-        router.push("/profile/setup");
+        // Resolve the persisted profile role before choosing the destination.
+        // New accounts still need onboarding before their role dashboard is usable.
+        try {
+          const profileRes = await fetch("/api/profile", { cache: "no-store" });
+          const profileData = profileRes.ok ? await profileRes.json() : null;
+          if (profileData?.isComplete) {
+            const role = profileData.profile?.role ?? roleToSave;
+            const destination = role === "donor"
+              ? "/donor/pulse"
+              : role === "moderator"
+                ? "/moderator"
+                : "/requests";
+            setSuccessMsg("Account created! Redirecting to your dashboard...");
+            router.replace(destination);
+          } else {
+            setSuccessMsg("Account created! Redirecting to complete your profile...");
+            router.replace("/profile/setup");
+          }
+        } catch {
+          setSuccessMsg("Account created! Redirecting to complete your profile...");
+          router.replace("/profile/setup");
+        }
       }
     } catch (err: unknown) {
       setErrorMsg(
