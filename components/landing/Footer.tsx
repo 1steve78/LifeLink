@@ -1,154 +1,86 @@
 import React from "react";
-import { BrandLogo } from "./BrandLogo";
-import { Heart, PhoneCall, Mail } from "lucide-react";
+import Link from "next/link";
+import { Heart, Mail, PhoneCall } from "lucide-react";
+
+const footerLinks = [
+  { label: "Home", href: "#hero" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Safety", href: "#services" },
+  { label: "Our impact", href: "#impact" },
+  { label: "Join LifeLink", href: "/login" },
+];
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-neutral-950 text-neutral-400 text-sm border-t border-neutral-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 pb-12 border-b border-neutral-800/80">
-          {/* Brand Col */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2">
-              <BrandLogo className="brightness-125" />
+    <footer className="relative isolate bg-transparent px-4 py-6 text-white sm:px-6 sm:py-8 lg:px-8">
+      <div
+        className="relative mx-auto min-h-[390px] max-w-[1440px] overflow-hidden rounded-[2rem] border border-white/20 px-7 pb-5 pt-8 shadow-[0_30px_70px_rgba(0,0,0,0.2)] sm:min-h-[430px] sm:px-10 sm:pt-10 lg:px-12"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse at 12% 100%, rgba(113, 58, 255, 0.75), transparent 45%), radial-gradient(ellipse at 45% 110%, rgba(236, 40, 132, 0.72), transparent 48%), radial-gradient(ellipse at 78% 105%, rgba(255, 116, 73, 0.68), transparent 45%), radial-gradient(ellipse at 100% 100%, rgba(255, 218, 105, 0.72), transparent 40%), linear-gradient(112deg, #5623bd 0%, #a523b4 28%, #d52b77 52%, #e65c4c 74%, #d6ab52 100%)",
+        }}
+      >
+        <div className="relative z-10 flex flex-col justify-between gap-10 sm:flex-row sm:gap-8">
+          <nav aria-label="Footer navigation">
+            <ul className="space-y-2">
+              {footerLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link
+                    href={href}
+                    className="text-lg font-medium tracking-[-0.03em] text-white/90 transition-colors hover:text-white sm:text-xl"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="flex flex-col gap-5 text-left text-sm text-white/75 sm:items-end sm:text-right">
+            <div className="flex flex-col gap-3">
+              <a
+                href="mailto:support@lifelink.org.in"
+                className="inline-flex items-center gap-2 transition-colors hover:text-white sm:justify-end"
+              >
+                <Mail className="h-4 w-4 text-white/90" aria-hidden="true" />
+                support@lifelink.org.in
+              </a>
+              <a
+                href="tel:1800543354655"
+                className="inline-flex items-center gap-2 transition-colors hover:text-white sm:justify-end"
+              >
+                <PhoneCall className="h-4 w-4 text-white/90" aria-hidden="true" />
+                1800-LIFELINK · 24/7 toll free
+              </a>
             </div>
-            <p className="mt-4 text-xs sm:text-sm text-neutral-400 leading-relaxed max-w-sm">
-              India&apos;s real-time emergency blood and platelet coordination platform.
-              Powered by UIDAI-compliant verification, AI document vision, and geospatial donor dispatch.
+            <p className="max-w-sm leading-relaxed text-white/80">
+              India&apos;s emergency blood and platelet coordination platform.
             </p>
-
-            <div className="mt-6 flex flex-col gap-2 text-xs text-neutral-300">
-              <div className="flex items-center gap-2">
-                <PhoneCall className="w-4 h-4 text-[#C81E1E]" />
-                <span>Emergency Helpline: 1800-LIFELINK (24/7 Toll Free)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-[#C81E1E]" />
-                <span>support@lifelink.org.in</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Col 2: Platform */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
-              Platform
-            </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm">
-              <li>
-                <a href="#hero" className="hover:text-white transition-colors">
-                  Create Blood Request
-                </a>
-              </li>
-              <li>
-                <a href="#hero" className="hover:text-white transition-colors">
-                  Find Nearby Donors
-                </a>
-              </li>
-              <li>
-                <a href="#how-it-works" className="hover:text-white transition-colors">
-                  How It Works
-                </a>
-              </li>
-              <li>
-                <a href="#impact" className="hover:text-white transition-colors">
-                  Impact & Statistics
-                </a>
-              </li>
-              <li>
-                <a href="#about" className="hover:text-white transition-colors">
-                  Hospital Partner Network
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 3: Safety & AI */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
-              Verification Gates
-            </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm">
-              <li>
-                <a href="#how-it-works" className="hover:text-white transition-colors">
-                  Gate 1: Aadhaar OTP
-                </a>
-              </li>
-              <li>
-                <a href="#how-it-works" className="hover:text-white transition-colors">
-                  Gate 2: Hospital Doc Vision
-                </a>
-              </li>
-              <li>
-                <a href="#how-it-works" className="hover:text-white transition-colors">
-                  Gate 3: Claude AI Screening
-                </a>
-              </li>
-              <li>
-                <span className="text-neutral-500">Trafficking Prevention</span>
-              </li>
-              <li>
-                <span className="text-neutral-500">NBTC Ethical Protocols</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 4: Regulatory & Legal */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">
-              Legal & Trust
-            </h4>
-            <ul className="space-y-2.5 text-xs sm:text-sm">
-              <li>
-                <span className="hover:text-white cursor-pointer transition-colors">
-                  NBTC Compliance
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-white cursor-pointer transition-colors">
-                  NOTTO Guidelines
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-white cursor-pointer transition-colors">
-                  Privacy Policy
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-white cursor-pointer transition-colors">
-                  Terms of Service
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-white cursor-pointer transition-colors">
-                  Zero Commercialization
-                </span>
-              </li>
-            </ul>
           </div>
         </div>
 
-        {/* Regulatory Disclaimer Notice */}
-        <div className="py-6 border-b border-neutral-900 text-neutral-500 text-[11px] leading-relaxed">
-          <p>
-            <strong className="text-neutral-400">Important Disclaimer:</strong> LifeLink is a voluntary coordination platform that bridges communication between genuine patient attendants and voluntary blood donors. LifeLink does not buy, sell, store, or broker blood or human organs. All donations are 100% voluntary and must take place at licensed hospital blood banks in accordance with the Drugs and Cosmetics Act, 1940 and National Blood Transfusion Council (NBTC) norms.
-          </p>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-[-0.12em] select-none whitespace-nowrap text-center text-[clamp(5rem,22vw,20rem)] font-semibold leading-[0.78] tracking-[-0.085em] text-white/[0.075]"
+        >
+          LifeLink
         </div>
+      </div>
 
-        {/* Bottom copyright row */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span>© {new Date().getFullYear()} LifeLink Network. Built with</span>
-            <Heart className="w-3.5 h-3.5 text-[#C81E1E] fill-[#C81E1E]" />
-            <span>for human lives.</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              All Systems Operational
-            </span>
-          </div>
+      <div className="mx-auto max-w-[1440px] px-2 pb-2 pt-6 text-[11px] leading-relaxed text-neutral-600 sm:px-4 sm:pt-7">
+        <div className="flex flex-col gap-2 border-t border-neutral-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <span className="inline-flex items-center gap-1.5 text-neutral-600">
+            © {new Date().getFullYear()} LifeLink Network. Built with
+            <Heart
+              className="h-3.5 w-3.5 fill-[#FD113F] text-[#FD113F]"
+              aria-hidden="true"
+            />
+            for human lives.
+          </span>
+          <span className="inline-flex items-center gap-2 text-emerald-700">
+            <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" />
+            All systems operational
+          </span>
         </div>
       </div>
     </footer>

@@ -2,15 +2,16 @@ import type { Config } from "tailwindcss";
 
 const config: Config = {
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       fontFamily: {
-        serif: ['"Playfair Display"', "Georgia", "serif"],
-        sans: ['"Plus Jakarta Sans"', "var(--font-geist-sans)", "system-ui", "sans-serif"],
+        // Use CSS variables injected by next/font/google in layout.tsx
+        serif: ["var(--font-playfair)", "Georgia", "serif"],
+        sans: ["var(--font-plus-jakarta)", "var(--font-geist-sans)", "system-ui", "sans-serif"],
       },
       colors: {
         background: "var(--background)",

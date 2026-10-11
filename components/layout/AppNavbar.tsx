@@ -78,6 +78,11 @@ export default function AppNavbar() {
   const navLinks = role ? NAV_LINKS[role] : [];
   const displayLinks = isLanding ? LANDING_NAV : navLinks;
 
+  // On landing page, the immersive Hero section renders its own floating pill navbar
+  if (isLanding) {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-neutral-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">

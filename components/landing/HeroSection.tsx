@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
-import { ArrowRight, Users, MapPin, ChevronDown } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
 
 interface HeroSectionProps {
   onOpenRequestModal?: () => void;
@@ -13,129 +13,264 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onOpenRequestModal,
   onOpenDonorModal,
 }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const gradientCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    let gradient: { destroy: () => void } | undefined;
+
+    void import("@firecms/neat").then(({ NeatGradient }) => {
+      const canvas = gradientCanvasRef.current;
+      if (cancelled || !canvas) return;
+
+      gradient = new NeatGradient({
+        ref: canvas,
+        colors: [
+          { color: "#FD113F", enabled: true },
+          { color: "#90E0FF", enabled: true },
+          { color: "#FFC858", enabled: true },
+          { color: "#753BFF", enabled: true },
+          { color: "#f5e1e5", enabled: false },
+          { color: "#B8D4E6", enabled: false },
+        ],
+        speed: 2,
+        horizontalPressure: 5,
+        verticalPressure: 6,
+        waveFrequencyX: 1,
+        waveFrequencyY: 2,
+        waveAmplitude: 10,
+        secondaryWaveEnabled: false,
+        shadows: 0,
+        highlights: 7,
+        colorBrightness: 1.05,
+        colorSaturation: 0,
+        colorBlending: 9,
+        backgroundColor: "#07050e",
+        backgroundAlpha: 1,
+        grainScale: 0,
+        grainSparsity: 0,
+        grainIntensity: 0,
+        grainSpeed: 0,
+        flowEnabled: false,
+      });
+    }).catch((error: unknown) => {
+      console.error("Failed to initialize the hero gradient:", error);
+    });
+
+    return () => {
+      cancelled = true;
+      gradient?.destroy();
+    };
+  }, []);
+
   return (
-    <section id="hero" className="relative w-full bg-white overflow-hidden pb-4">
-      {/* Desktop & Tablet View (Exact Pixel-Perfect Panoramic Mockup with Interactive Triggers) */}
-      <div className="hidden md:block relative w-full max-w-[1440px] mx-auto">
-        <div className="relative w-full aspect-[1024/415] min-h-[460px] lg:min-h-[520px]">
-          <Image
-            src="/images/hero-full-mockup.jpg"
-            alt="Real People Save Real Lives - LifeLink Community"
-            fill
-            priority
-            sizes="(max-width: 1440px) 100vw, 1440px"
-            className="object-cover object-center"
-          />
+    <section
+      id="hero"
+      className="relative w-full min-h-[100svh] bg-[#07050e] text-white flex flex-col justify-between overflow-hidden select-none font-sans"
+    >
+      {/* 1. Ambient Background Layer */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 25% 38%, rgba(255, 200, 88, 0.9), transparent 38%), radial-gradient(ellipse at 78% 28%, rgba(253, 17, 63, 0.78), transparent 42%), radial-gradient(ellipse at 68% 78%, rgba(144, 224, 255, 0.82), transparent 44%), radial-gradient(ellipse at 20% 82%, rgba(117, 59, 255, 0.72), transparent 38%), #07050e",
+        }}
+      >
+        <canvas
+          ref={gradientCanvasRef}
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full pointer-events-none"
+        />
+        {/* Subtle Darkening Overlay to ensure contrast on all display scales */}
+        <div className="absolute inset-0 bg-black/15 pointer-events-none" />
 
-          {/* Interactive Clickable Hotspot: 'Create a Blood Request' button */}
-          <button
-            onClick={onOpenRequestModal}
-            className="absolute left-[10.5%] top-[65.5%] w-[18.2%] h-[11%] rounded-full cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-rose-400/50 hover:bg-white/5 active:scale-95"
-            title="Create a Blood Request"
-            aria-label="Create a Blood Request"
-          />
-
-          {/* Interactive Clickable Hotspot: 'Rahul Sharma' Donor Card */}
-          <div
-            onClick={onOpenDonorModal}
-            className="absolute left-[66%] top-[20%] w-[24%] h-[66%] rounded-3xl cursor-pointer transition-all duration-200 hover:ring-2 hover:ring-rose-400/50 hover:bg-white/5"
-            title="View Donor Impact Profile"
-            role="button"
-            aria-label="View Donor Impact Profile"
-          />
-        </div>
-      </div>
-
-      {/* Mobile Responsive Fallback (Screens under 768px) */}
-      <div className="md:hidden px-5 py-8 flex flex-col gap-8 bg-gradient-to-b from-white via-rose-50/20 to-white">
-        <div>
-          <h1 className="font-serif text-4xl sm:text-5xl font-normal text-[#111827] tracking-tight leading-tight">
-            Real People
-            <br />
-            <span className="italic text-[#E23B42] font-normal">Save Real Lives</span>
-          </h1>
-
-          <p className="mt-4 text-sm text-neutral-600 leading-relaxed">
-            A trusted community platform to connect blood donors with people in need — quickly, safely and responsibly.
-          </p>
-
-          <div className="mt-6">
-            <button
-              onClick={onOpenRequestModal}
-              className="px-6 py-3.5 text-xs font-semibold text-white bg-[#18181B] hover:bg-neutral-800 rounded-full shadow-lg flex items-center gap-2"
-            >
-              <span>Create a Blood Request</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Character Image */}
-        <div className="relative w-full h-64 rounded-3xl overflow-hidden shadow-lg">
-          <Image
-            src="/images/hero-man-silhouette.jpg"
-            alt="LifeLink Community"
-            fill
-            className="object-cover object-center"
-          />
-        </div>
-
-        {/* Mobile Donor Card */}
+        {/* Tactile Film Grain Overlay */}
         <div
-          onClick={onOpenDonorModal}
-          className="bg-white/95 rounded-3xl p-5 shadow-xl border border-neutral-100"
-        >
-          <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+          className="absolute inset-0 pointer-events-none opacity-20 mix-blend-overlay"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+          }}
+        />
+      </div>
+
+      {/* 2. Floating Frosted Glass Pill Navbar */}
+      <header className="relative z-30 w-full pt-6 sm:pt-8 md:pt-10 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between rounded-full border border-white/20 bg-white/[0.08] backdrop-blur-2xl px-5 py-2.5 sm:px-8 sm:py-3 shadow-2xl shadow-black/40">
+            {/* Brand Logo */}
+            <Link
+              href="/"
+              className="font-semibold text-lg sm:text-xl text-white tracking-tight hover:opacity-90 transition-opacity"
+            >
+              LifeLink
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden md:flex items-center gap-7 lg:gap-9 text-xs sm:text-sm font-normal text-white/80">
+              <a
+                href="#hero"
+                className="hover:text-white transition-colors duration-200"
+              >
+                Home
+              </a>
+              <a
+                href="#how-it-works"
+                className="hover:text-white transition-colors duration-200"
+              >
+                How it works
+              </a>
+              <a
+                href="#services"
+                className="hover:text-white transition-colors duration-200"
+              >
+                Safety
+              </a>
+              <a
+                href="#impact"
+                className="hover:text-white transition-colors duration-200"
+              >
+                Effectiveness
+              </a>
+            </nav>
+
+            {/* Right Action: 'Join Now' Button */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 font-bold">
-                RS
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-neutral-900">Rahul Sharma</h4>
-                <p className="text-xs text-neutral-500">A+ Donor</p>
-              </div>
-            </div>
-            <span className="bg-emerald-50 text-emerald-600 text-xs px-2.5 py-1 rounded-full font-medium">
-              Available
-            </span>
-          </div>
+              <Link
+                href="/login"
+                className="rounded-full bg-white text-neutral-950 font-semibold text-xs sm:text-sm px-5 py-2 sm:px-6 sm:py-2.5 hover:bg-neutral-100 hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-lg shadow-black/20"
+              >
+                Join Now
+              </Link>
 
-          <div className="grid grid-cols-2 gap-2 py-3 border-b border-neutral-100 text-xs">
-            <div className="bg-[#FAF7F6] p-2 rounded-xl flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#E23B42]" />
-              <div>
-                <div className="font-bold text-neutral-900">3</div>
-                <div className="text-[10px] text-neutral-500">People Helped</div>
-              </div>
-            </div>
-            <div className="bg-[#FAF7F6] p-2 rounded-xl flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#E23B42]" />
-              <div>
-                <div className="font-bold text-neutral-900">12 km</div>
-                <div className="text-[10px] text-neutral-500">Nearby Requests</div>
-              </div>
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-1.5 text-white/80 hover:text-white transition-colors"
+                aria-label="Toggle mobile navigation"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
             </div>
           </div>
 
-          <div className="pt-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-neutral-900">Your Impact</span>
-              <span className="text-[10px] text-neutral-400 flex items-center gap-1">
-                This Year <ChevronDown className="w-3 h-3" />
-              </span>
+          {/* Mobile Drawer */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 rounded-3xl border border-white/20 bg-[#0c0717]/90 backdrop-blur-2xl p-5 shadow-2xl animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="flex flex-col gap-3.5 text-sm font-medium text-white/85">
+                <a
+                  href="#hero"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-1 hover:text-white transition-colors"
+                >
+                  Home
+                </a>
+                <a
+                  href="#how-it-works"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-1 hover:text-white transition-colors"
+                >
+                  How it works
+                </a>
+                <a
+                  href="#services"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-1 hover:text-white transition-colors"
+                >
+                  Safety
+                </a>
+                <a
+                  href="#impact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-1 hover:text-white transition-colors"
+                >
+                  Effectiveness
+                </a>
+                <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenRequestModal?.();
+                    }}
+                    className="w-full text-center py-2.5 rounded-full bg-white/10 border border-white/20 text-white font-medium text-xs"
+                  >
+                    Request Blood
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onOpenDonorModal?.();
+                    }}
+                    className="w-full text-center py-2.5 rounded-full bg-white text-neutral-950 font-semibold text-xs"
+                  >
+                    Donate Blood
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex items-end justify-between gap-1 h-14">
-              {[25, 38, 48, 60, 75, 95].map((h, i) => (
-                <div
-                  key={i}
-                  className="flex-1 bg-gradient-to-t from-rose-200 to-rose-400 rounded-full"
-                  style={{ height: `${h}%` }}
-                />
-              ))}
+          )}
+        </div>
+      </header>
+
+      {/* 3. Hero Main Content Grid */}
+      <div className="relative z-20 flex-1 flex flex-col justify-between max-w-7xl mx-auto w-full px-6 sm:px-10 lg:px-16 pt-8 pb-10">
+        {/* Upper/Middle Right Pitch & CTA Block */}
+        <div className="w-full flex justify-end mt-4 sm:mt-10 md:mt-12">
+          <div className="max-w-md lg:max-w-lg text-left flex flex-col items-start">
+            <p className="text-white/85 text-xs sm:text-sm md:text-[15px] leading-relaxed font-light tracking-wide">
+              <span className="inline-block mr-1.5 text-white font-medium">↓</span>
+              Rapid response, verified urgency, and real-time coordination connecting critical blood requests with nearby donors when seconds count. Safe. Private. Backed by science & verified by medical moderators.
+            </p>
+
+            <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-3">
+              <button
+                onClick={onOpenRequestModal}
+                className="rounded-full border border-white/30 bg-white/10 hover:bg-white/20 backdrop-blur-md px-7 py-2.5 sm:px-8 sm:py-3 text-xs sm:text-sm font-medium text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-200"
+              >
+                Get Started
+              </button>
+              <button
+                onClick={onOpenDonorModal}
+                className="rounded-full border border-white/15 bg-black/25 hover:bg-black/40 backdrop-blur-md px-6 py-2.5 sm:px-7 sm:py-3 text-xs sm:text-sm font-medium text-white/90 hover:text-white active:scale-95 transition-all duration-200"
+              >
+                Donate Blood
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Lower Content: Giant Headline (Left) & Scroll Indicator (Right) */}
+        <div className="w-full mt-16 sm:mt-24 md:mt-28 flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-2">
+          {/* Headline */}
+          <div className="flex-1 -translate-y-8 sm:-translate-y-10 md:-translate-y-12">
+            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[96px] xl:text-[108px] font-normal tracking-[-0.035em] text-white leading-[0.93]">
+              <span className="block drop-shadow-[0_4px_35px_rgba(255,255,255,0.2)]">
+                AI-Powered
+              </span>
+              <span className="block drop-shadow-[0_4px_35px_rgba(255,255,255,0.2)]">
+                Emergency Blood
+              </span>
+              <span className="block drop-shadow-[0_4px_35px_rgba(255,255,255,0.2)]">
+                +Support
+              </span>
+            </h1>
+          </div>
+
+          {/* Scroll to Explore Link */}
+          <div className="flex items-center justify-start lg:justify-end pb-3">
+            <a
+              href="#community"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-light text-white/70 hover:text-white transition-colors duration-200 tracking-wide"
+            >
+              <span>Scroll to Explore</span>
+              <span className="text-sm">↓</span>
+            </a>
+          </div>
+        </div>
       </div>
+
+      {/* 4. Delicate Bottom Divider */}
+      <div className="relative z-20 w-full border-t border-white/10" />
     </section>
   );
 };

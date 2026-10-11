@@ -1,17 +1,38 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+// HeroSection is above-the-fold — eagerly imported for fastest LCP
 import { HeroSection } from "@/components/landing/HeroSection";
-import { CommunitySection } from "@/components/landing/CommunitySection";
-import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
-import { ImpactSection } from "@/components/landing/ImpactSection";
-import { AiCompanionSection } from "@/components/landing/AiCompanionSection";
-import { LiveRequestsFeed } from "@/components/landing/LiveRequestsFeed";
-import { BloodCompatibilityMatrix } from "@/components/landing/BloodCompatibilityMatrix";
-import { Footer } from "@/components/landing/Footer";
-import { RequestModal } from "@/components/landing/RequestModal";
-import { FindDonorModal } from "@/components/landing/FindDonorModal";
+
+// Below-the-fold sections are lazy-loaded to reduce initial JS bundle
+const HowItWorksSection = dynamic(
+  () => import("@/components/landing/HowItWorksSection").then((m) => ({ default: m.HowItWorksSection }))
+);
+const ImpactSection = dynamic(
+  () => import("@/components/landing/ImpactSection").then((m) => ({ default: m.ImpactSection }))
+);
+const AiCompanionSection = dynamic(
+  () => import("@/components/landing/AiCompanionSection").then((m) => ({ default: m.AiCompanionSection }))
+);
+const LiveRequestsFeed = dynamic(
+  () => import("@/components/landing/LiveRequestsFeed").then((m) => ({ default: m.LiveRequestsFeed }))
+);
+const BloodCompatibilityMatrix = dynamic(
+  () => import("@/components/landing/BloodCompatibilityMatrix").then((m) => ({ default: m.BloodCompatibilityMatrix }))
+);
+const Footer = dynamic(
+  () => import("@/components/landing/Footer").then((m) => ({ default: m.Footer }))
+);
+const RequestModal = dynamic(
+  () => import("@/components/landing/RequestModal").then((m) => ({ default: m.RequestModal })),
+  { ssr: false }
+);
+const FindDonorModal = dynamic(
+  () => import("@/components/landing/FindDonorModal").then((m) => ({ default: m.FindDonorModal })),
+  { ssr: false }
+);
 
 export default function LandingPage() {
   const router = useRouter();
@@ -52,13 +73,7 @@ export default function LandingPage() {
           onOpenDonorModal={() => setIsDonorModalOpen(true)}
         />
 
-        {/* Section 2: "From Urgent Needs to Brighter Tomorrows" (Image 1 Bottom & Image 2) */}
-        <CommunitySection
-          onOpenRequestModal={() => setIsRequestModalOpen(true)}
-          onOpenDonorModal={() => setIsDonorModalOpen(true)}
-        />
-
-        {/* Section 3: "How LifeLink Works" with Cinematic Glitch Background & 4 Glass Steps (Image 2 Bottom & Image 3) */}
+        {/* Section 2: "How LifeLink Works" with Cinematic Glitch Background & 4 Glass Steps (Image 2 Bottom & Image 3) */}
         <HowItWorksSection />
 
         {/* Section 4: "OUR SERVICES / How LifeLink Makes an Impact" (Image 4) */}

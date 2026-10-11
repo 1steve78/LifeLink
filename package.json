@@ -15,6 +15,7 @@
     "db:seed:demo": "node --env-file=.env.local supabase/seed-demo.mjs"
   },
   "dependencies": {
+    "@firecms/neat": "^1.1.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "@types/leaflet": "^1.9.22",
