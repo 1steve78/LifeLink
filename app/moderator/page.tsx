@@ -75,18 +75,28 @@ export default function ModeratorDashboardPage() {
     finally { setSaving(null); }
   };
 
-  return <main className="min-h-screen bg-[#fdf9f8] px-4 py-8 text-neutral-900 sm:px-6">
-    <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
-        <div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-700"><ShieldCheck className="h-4 w-4" /> Human safety checkpoint</p><h1 className="mt-2 text-3xl font-extrabold">Moderator review</h1><p className="mt-2 max-w-2xl text-sm text-neutral-600">Review evidence and screening signals. AI findings are leads for review, not proof of fraud or document authenticity.</p></div>
-        <button onClick={() => void refresh()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh queue</button>
+  return <main className="min-h-screen bg-gradient-to-br from-violet-50 via-[#fdf9f8] to-rose-50 px-4 pb-16 pt-8 text-neutral-900 sm:px-6 sm:pt-10">
+    <div className="mx-auto max-w-7xl space-y-6">
+      <header className="relative isolate flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-r from-[#241044] via-[#4c1d75] to-[#7e22ce] p-6 text-white shadow-xl shadow-violet-950/10 sm:p-8">
+        <div className="pointer-events-none absolute -right-8 -top-20 -z-10 h-64 w-64 rounded-full bg-fuchsia-300/15 blur-3xl" />
+        <div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-violet-200"><ShieldCheck className="h-4 w-4" />Human safety checkpoint</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">Moderator review</h1><p className="mt-2 max-w-2xl text-sm text-violet-100 sm:text-base">Review evidence and screening signals. AI findings are leads for review, not proof of fraud or document authenticity.</p></div>
+        <button onClick={() => void refresh()} disabled={loading} className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh queue</button>
       </header>
+      <section aria-label="Review queue summary" className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-white bg-white p-5 shadow-sm"><p className="text-sm font-medium text-neutral-500">In review queue</p><p className="mt-2 text-3xl font-extrabold tracking-tight">{loading ? "—" : requests.length}</p><p className="mt-1 text-xs text-neutral-500">Requests awaiting a decision</p></div>
+        <div className="rounded-2xl border border-white bg-white p-5 shadow-sm"><p className="text-sm font-medium text-neutral-500">Flagged for review</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-amber-700">{loading ? "—" : requests.filter((item) => item.verification.some((event) => event.status === "flagged")).length}</p><p className="mt-1 text-xs text-neutral-500">Screening signals need careful review</p></div>
+        <div className="rounded-2xl border border-white bg-white p-5 shadow-sm"><p className="text-sm font-medium text-neutral-500">Needs information</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-violet-700">{loading ? "—" : requests.filter((item) => item.reviewState === "needs_information").length}</p><p className="mt-1 text-xs text-neutral-500">Requests with requester follow-up</p></div>
+      </section>
       {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}
       <ReportsQueue />
+      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-neutral-200/80 pb-3">
+        <div><h2 className="text-xl font-extrabold tracking-tight">Blood request review</h2><p className="mt-1 text-sm text-neutral-500">Review documentation, screening results, and requester details.</p></div>
+        <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">{loading ? "Loading" : `${requests.length} pending`}</span>
+      </div>
       {loading && requests.length === 0 ? <div className="flex items-center gap-2 rounded-2xl bg-white p-8 text-neutral-600"><Loader2 className="h-5 w-5 animate-spin" />Loading pending requests…</div> : requests.length === 0 ? <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center text-neutral-600">No pending requests require review.</div> : <div className="space-y-5">
         {requests.map((item) => {
           const flagged = item.verification.some((event) => event.status === "flagged");
-          return <article key={item.id} className="space-y-5 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-7">
+          return <article key={item.id} className="space-y-5 rounded-3xl border border-white bg-white p-5 shadow-lg shadow-neutral-900/5 sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-xl font-extrabold">{item.bloodGroup} · {item.unitsNeeded} {item.unitsNeeded === 1 ? "unit" : "units"}</h2><span className={`rounded-full px-3 py-1 text-xs font-bold ${flagged || item.reviewState === "needs_information" ? "bg-amber-100 text-amber-900" : "bg-blue-100 text-blue-900"}`}>{item.reviewState === "needs_information" ? "Needs information" : flagged ? "Flagged for review" : item.status.replaceAll("_", " ")}</span></div><p className="mt-2 font-semibold">{item.hospitalName} · {item.urgency}</p><p className="text-sm text-neutral-500">{item.hospitalAddress || "No hospital address provided"}{item.requiredBy ? ` · Needed by ${new Date(item.requiredBy).toLocaleString()}` : ""}</p></div>
               <button onClick={() => void openDocument(item.id)} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"><ExternalLink className="h-4 w-4" />Open private document</button>

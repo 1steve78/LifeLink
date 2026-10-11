@@ -24,14 +24,14 @@ const NAV_LINKS: Record<NonNullable<Role>, { label: string; href: string }[]> = 
   ],
 };
 
-// Pages where the landing-style nav links (Home, About, etc.) show
+// Pages where the landing-style nav is replaced by the immersive hero nav.
 const LANDING_PATHS = new Set(["/"]);
 
 const LANDING_NAV = [
-  { label: "Home", href: "#hero" },
-  { label: "About", href: "#community" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Find Donors", href: "#services" },
+  { label: "Home", href: "/#hero" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Safety", href: "/#services" },
+  { label: "Effectiveness", href: "/#impact" },
 ];
 
 export default function AppNavbar() {
@@ -76,7 +76,9 @@ export default function AppNavbar() {
   };
 
   const navLinks = role ? NAV_LINKS[role] : [];
-  const displayLinks = isLanding ? LANDING_NAV : navLinks;
+  const displayLinks = role
+    ? [{ label: "Home", href: "/" }, ...NAV_LINKS[role]]
+    : LANDING_NAV;
 
   // On landing page, the immersive Hero section renders its own floating pill navbar
   if (isLanding) {
@@ -84,21 +86,19 @@ export default function AppNavbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-neutral-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 w-full px-4 pt-4 sm:px-6">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-full border border-neutral-200/80 bg-white/90 px-4 py-2.5 shadow-xl shadow-black/5 backdrop-blur-2xl sm:px-6">
 
         {/* Brand */}
         <BrandLogo />
 
         {/* Desktop nav links */}
-        <nav className="hidden md:flex items-center gap-6 lg:gap-8 flex-1 justify-center">
+        <nav className="hidden md:flex items-center gap-5 lg:gap-8 flex-1 justify-center">
           {displayLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
-              className={`text-sm font-medium transition-colors hover:text-[#E23B42] ${
-                pathname === link.href ? "text-[#E23B42] font-semibold" : "text-neutral-600"
-              }`}
+              className={`text-xs font-medium transition-colors hover:text-[#E23B42] lg:text-sm ${pathname === link.href ? "font-semibold text-[#E23B42]" : "text-neutral-600"}`}
             >
               {link.label}
             </Link>
@@ -174,7 +174,7 @@ export default function AppNavbar() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 rounded-xl text-neutral-700 hover:bg-neutral-100 transition-colors"
+          className="rounded-full p-2 text-neutral-700 transition-colors hover:bg-neutral-100 md:hidden"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -183,7 +183,7 @@ export default function AppNavbar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-neutral-100 bg-white px-5 py-5 space-y-4 shadow-lg animate-in slide-in-from-top-4 duration-200">
+        <div className="mx-auto mt-3 max-w-5xl space-y-4 rounded-3xl border border-neutral-200 bg-white/95 px-5 py-5 shadow-xl backdrop-blur-xl animate-in slide-in-from-top-4 duration-200 md:hidden">
           {displayLinks.map((link) => (
             <Link
               key={link.label}
