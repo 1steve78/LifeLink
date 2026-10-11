@@ -33,6 +33,11 @@ export const requestStatus = pgEnum("request_status", [
   "cancelled",
   "expired",
 ]);
+export const donationType = pgEnum("donation_type", [
+  "whole_blood",
+  "single_platelet_apheresis",
+  "double_platelet_apheresis",
+]);
 export const verificationGate = pgEnum("verification_gate", [
   "basic_validation",
   "document_analysis",
@@ -65,6 +70,12 @@ export const profiles = pgTable(
     locality: text("locality"),
     location: geographyPoint("location"),
     lastDonationDate: date("last_donation_date"),
+    lastWholeBloodAt: timestamp("last_whole_blood_at", { withTimezone: true }),
+    lastWholeBloodSource: text("last_whole_blood_source"),
+    lastApheresisAt: timestamp("last_apheresis_at", { withTimezone: true }),
+    lastApheresisType: donationType("last_apheresis_type"),
+    lastApheresisRedCellsReinfused: boolean("last_apheresis_red_cells_reinfused"),
+    lastApheresisSource: text("last_apheresis_source"),
     availableToDonate: boolean("available_to_donate").notNull().default(false),
     availabilityExpiresAt: timestamp("availability_expires_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -95,6 +106,7 @@ export const bloodRequests = pgTable(
     hospitalName: text("hospital_name").notNull(),
     hospitalAddress: text("hospital_address"),
     hospitalLocation: geographyPoint("hospital_location"),
+    donationType: donationType("donation_type").notNull().default("whole_blood"),
     requiredBy: timestamp("required_by", { withTimezone: true }),
     supportingDocumentPath: text("supporting_document_path"),
     documentSha256: text("document_sha256"),
@@ -197,6 +209,9 @@ export const donationReports = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     pledgeId: uuid("pledge_id").notNull().references(() => donorPledges.id, { onDelete: "cascade" }),
     unitsDonated: integer("units_donated").notNull(),
+    donationType: donationType("donation_type").notNull().default("whole_blood"),
+    donationDate: date("donation_date").notNull().defaultNow(),
+    redCellsReinfused: boolean("red_cells_reinfused"),
     status: text("status").notNull().default("reported"),
     reportedAt: timestamp("reported_at", { withTimezone: true }).notNull().defaultNow(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
