@@ -142,7 +142,7 @@ export async function POST(request: Request) {
   let formData: FormData;
   try {
     formData = await request.formData();
-    const allKeys = [...formData.keys()];
+    const allKeys = Array.from(formData.keys());
     console.log("[POST /api/requests] [4/11] ✅ form keys present:", JSON.stringify(allKeys));
   } catch (err) {
     console.error("[POST /api/requests] [4/11] ❌ 400 — formData parse threw:", err instanceof Error ? err.message : err);
