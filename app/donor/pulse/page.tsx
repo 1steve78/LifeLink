@@ -20,6 +20,17 @@ type Notification = {
   requiredBy: string | null;
 };
 
+function readMapPoint(value: unknown): [number, number] | null {
+  if (typeof value !== "string") return null;
+  const point = value.match(/POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)/i);
+  if (!point) return null;
+  const longitude = Number(point[1]);
+  const latitude = Number(point[2]);
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+  if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) return null;
+  return [latitude, longitude];
+}
+
 export default function DonorPulsePage() {
   const [matches, setMatches] = useState<DonorMatch[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -30,6 +41,7 @@ export default function DonorPulsePage() {
   const [available, setAvailable] = useState(false);
   const [availabilityExpiresAt, setAvailabilityExpiresAt] = useState<string | null>(null);
   const [savingAvailability, setSavingAvailability] = useState(false);
+  const [donorCenter, setDonorCenter] = useState<[number, number] | null>(null);
 
   const refresh = useCallback(async () => {
     setError("");
@@ -48,6 +60,7 @@ export default function DonorPulsePage() {
       setNotifications(notificationData.notifications ?? []);
       setAvailable(Boolean(profileData.profile?.availableToDonate && profileData.profile?.availabilityExpiresAt && new Date(profileData.profile.availabilityExpiresAt) > new Date()));
       setAvailabilityExpiresAt(profileData.profile?.availabilityExpiresAt ?? null);
+      setDonorCenter(readMapPoint(profileData.profile?.location));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load Emergency Pulse.");
     } finally {
@@ -144,26 +157,33 @@ export default function DonorPulsePage() {
   const notificationByRequest = new Map(notifications.map((notification) => [notification.requestId, notification]));
 
   return (
-    <main className="min-h-screen bg-[#fdf9f8] px-4 py-8 text-neutral-900 sm:px-6">
-      <div className="mx-auto max-w-6xl space-y-7">
-        <header className="flex flex-wrap items-center justify-between gap-4">
+    <main className="min-h-screen bg-gradient-to-br from-rose-50 via-[#fdf9f8] to-orange-50 px-4 pb-16 pt-8 text-neutral-900 sm:px-6 sm:pt-10">
+      <div className="mx-auto max-w-7xl space-y-7">
+        <header className="relative isolate flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-[2rem] border border-white/80 bg-gradient-to-r from-[#7f1d1d] via-[#b91c1c] to-[#e23b42] p-6 text-white shadow-xl shadow-red-900/10 sm:p-8">
+          <div className="pointer-events-none absolute -right-8 -top-20 -z-10 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-extrabold"><Droplet className="h-6 w-6 fill-red-600 text-red-600" />Emergency Pulse</h1>
-            <p className="mt-1 text-sm text-neutral-600">Approved nearby requests that match your donor profile.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-red-100">Donor dashboard</p>
+            <h1 className="mt-2 flex items-center gap-2 text-3xl font-extrabold tracking-tight sm:text-4xl"><Droplet className="h-7 w-7 fill-white text-white" />Emergency Pulse</h1>
+            <p className="mt-2 max-w-xl text-sm text-red-50 sm:text-base">Approved nearby requests that match your donor profile.</p>
           </div>
-          <button onClick={() => void refresh()} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50"><RefreshCw className="h-4 w-4" />Refresh</button>
+          <button onClick={() => void refresh()} className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"><RefreshCw className="h-4 w-4" />Refresh</button>
         </header>
 
+        <section aria-label="Donor activity summary" className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-white bg-white p-5 shadow-sm"><p className="text-sm font-medium text-neutral-500">Nearby matches</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">{loading ? "—" : matches.length}</p><p className="mt-1 text-xs text-neutral-500">Requests matching your profile</p></div>
+          <div className="rounded-2xl border border-white bg-white p-5 shadow-sm"><p className="text-sm font-medium text-neutral-500">Unread alerts</p><p className="mt-2 text-3xl font-extrabold tracking-tight text-neutral-900">{loading ? "—" : notifications.filter((item) => !item.readAt).length}</p><p className="mt-1 text-xs text-neutral-500">New request notifications</p></div>
+          <div className="rounded-2xl border border-white bg-white p-5 shadow-sm"><p className="text-sm font-medium text-neutral-500">Availability</p><p className={`mt-2 text-3xl font-extrabold tracking-tight ${loading ? "text-neutral-400" : available ? "text-emerald-700" : "text-neutral-400"}`}>{loading ? "—" : available ? "On" : "Off"}</p><p className="mt-1 text-xs text-neutral-500">{loading ? "Checking availability" : available ? "You can receive matching requests" : "Turn on availability to be matched"}</p></div>
+        </section>
 
         {error && <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><AlertCircle className="h-4 w-4" />{error}</div>}
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white p-4">
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm shadow-emerald-900/5 sm:p-6">
           <div><p className="font-bold">Donor availability: <span className={available ? "text-emerald-700" : "text-neutral-500"}>{available ? "On" : "Off"}</span></p><p className="mt-1 text-xs text-neutral-500">Availability expires after 72 hours. {available && availabilityExpiresAt ? `Current window ends ${new Date(availabilityExpiresAt).toLocaleString()}.` : "Turn it on when you can be contacted about a matched request."}</p></div>
           <div className="flex gap-2"><button disabled={savingAvailability} onClick={() => void updateAvailability(true)} className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50">{savingAvailability ? "Saving…" : available ? "I'm still available · 72h" : "I'm available for 72 hours"}</button>{available && <button disabled={savingAvailability} onClick={() => void updateAvailability(false)} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-50">Pause</button>}</div>
         </section>
         <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" /><p>Compatibility and the 90-day interval are preliminary matching filters only. A notification or pledge does not confirm medical eligibility; the hospital or blood bank must confirm compatibility and eligibility.</p></div>
 
-        <section className="overflow-hidden rounded-3xl border border-neutral-200 bg-white p-3 shadow-sm">
-          <RequestMap matches={matches} />
+        <section className="overflow-hidden rounded-3xl border border-white bg-white p-2 shadow-lg shadow-neutral-900/5 sm:p-3">
+          <RequestMap matches={matches} donorCenter={donorCenter} />
         </section>
 
         <section className="space-y-3">

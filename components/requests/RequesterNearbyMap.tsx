@@ -62,26 +62,24 @@ export default function RequesterNearbyMap({ requests }: { requests: NearbyReque
         container: containerRef.current,
         style: "mapbox://styles/mapbox/streets-v12",
         center,
-        zoom: requests.length === 1 ? 11 : 5,
+        zoom: 10,
         attributionControl: true,
       });
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
       map.on("load", () => {
-        if (requests.length > 1) {
-          const bounds = new mapboxgl.LngLatBounds();
-          requests.forEach((request) => bounds.extend([request.longitude, request.latitude]));
-          map?.fitBounds(bounds, { padding: 64, maxZoom: 12, duration: 0 });
-        }
+        const matchingAreas = requests.map((request) => makeRadiusPolygon(
+          request.longitude,
+          request.latitude,
+          matchingRadiusKm[request.urgency] ?? matchingRadiusKm.planned,
+        ));
+        const bounds = new mapboxgl.LngLatBounds();
+        matchingAreas.forEach((area) => {
+          area.geometry.coordinates[0].forEach((coordinate) => bounds.extend(coordinate));
+        });
+        if (!bounds.isEmpty()) map?.fitBounds(bounds, { padding: 64, maxZoom: 12, duration: 0 });
         map?.addSource("matching-areas", {
           type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: requests.map((request) => makeRadiusPolygon(
-              request.longitude,
-              request.latitude,
-              matchingRadiusKm[request.urgency] ?? matchingRadiusKm.planned,
-            )),
-          },
+          data: { type: "FeatureCollection", features: matchingAreas },
         });
         map?.addLayer({
           id: "matching-area-fill",
@@ -144,6 +142,6 @@ export default function RequesterNearbyMap({ requests }: { requests: NearbyReque
   return <div className="space-y-2">
     {error && <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{error}</p>}
     <div ref={containerRef} className="h-[360px] w-full overflow-hidden rounded-2xl bg-neutral-100" />
-    <p className="text-xs text-neutral-500">Request markers show hospitals. Shaded circles show approximate matching areas; availability is shown in broad bands. Donor pins, exact donor counts, and individual distances are never displayed.</p>
+    <p className="text-xs text-neutral-500">The map fits the full matching areas: 15 km for critical, 8 km for urgent, and 5 km for planned requests. Availability is shown in broad bands. Donor pins, exact donor counts, and individual distances are never displayed.</p>
   </div>;
 }
