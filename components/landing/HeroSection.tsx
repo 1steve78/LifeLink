@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { registerLandingGradientSource } from "@/lib/landing-gradient";
 
 interface HeroSectionProps {
   onOpenRequestModal?: () => void;
@@ -48,51 +49,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   useEffect(() => {
-    let cancelled = false;
-    let gradient: { destroy: () => void } | undefined;
-
-    void import("@firecms/neat").then(({ NeatGradient }) => {
-      const canvas = gradientCanvasRef.current;
-      if (cancelled || !canvas) return;
-
-      gradient = new NeatGradient({
-        ref: canvas,
-        colors: [
-          { color: "#FD113F", enabled: true },
-          { color: "#90E0FF", enabled: true },
-          { color: "#FFC858", enabled: true },
-          { color: "#753BFF", enabled: true },
-          { color: "#f5e1e5", enabled: false },
-          { color: "#B8D4E6", enabled: false },
-        ],
-        speed: 2,
-        horizontalPressure: 5,
-        verticalPressure: 6,
-        waveFrequencyX: 1,
-        waveFrequencyY: 2,
-        waveAmplitude: 10,
-        secondaryWaveEnabled: false,
-        shadows: 0,
-        highlights: 7,
-        colorBrightness: 1.05,
-        colorSaturation: 0,
-        colorBlending: 9,
-        backgroundColor: "#07050e",
-        backgroundAlpha: 1,
-        grainScale: 0,
-        grainSparsity: 0,
-        grainIntensity: 0,
-        grainSpeed: 0,
-        flowEnabled: false,
-      });
-    }).catch((error: unknown) => {
-      console.error("Failed to initialize the hero gradient:", error);
-    });
-
-    return () => {
-      cancelled = true;
-      gradient?.destroy();
-    };
+    const canvas = gradientCanvasRef.current;
+    if (!canvas) return;
+    return registerLandingGradientSource(canvas);
   }, []);
 
   return (
